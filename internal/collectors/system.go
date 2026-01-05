@@ -228,7 +228,7 @@ func (c *SystemCollector) getSystemIntegrity(ctx context.Context) (*core.SystemI
 func (c *SystemCollector) getWindowsBootTimeAndUptime(ctx context.Context) (time.Time, time.Duration, error) {
 	// 简化实现：使用当前时间减去运行时间
 	// 实际应该使用Windows API获取准确的启动时间
-	now := time.Now()
+	now := time.Now().UTC()
 	uptime := time.Duration(60) * time.Minute // 模拟1小时运行时间
 	bootTime := now.Add(-uptime)
 
@@ -241,7 +241,7 @@ func (c *SystemCollector) getWindowsNTPStatus(ctx context.Context) (*core.NTPSta
 	return &core.NTPStatus{
 		Synchronized: true,
 		Server:       "time.windows.com",
-		LastSync:     time.Now().Add(-5 * time.Minute),
+		LastSync:     time.Now().UTC().Add(-5 * time.Minute),
 		Offset:       time.Duration(10) * time.Millisecond,
 	}, nil
 }
@@ -274,7 +274,7 @@ func (c *SystemCollector) getWindowsIntegrity(ctx context.Context) (*core.System
 	// 实际应该使用sfc /verifyonly或其他完整性检查工具
 	return &core.SystemIntegrity{
 		Status:      "healthy",
-		LastCheck:   time.Now().Add(-24 * time.Hour),
+		LastCheck:   time.Now().UTC().Add(-24 * time.Hour),
 		Issues:      []string{},
 		CheckMethod: "sfc",
 	}, nil
@@ -284,7 +284,7 @@ func (c *SystemCollector) getWindowsIntegrity(ctx context.Context) (*core.System
 func (c *SystemCollector) getLinuxBootTimeAndUptime(ctx context.Context) (time.Time, time.Duration, error) {
 	// 简化实现：使用当前时间减去运行时间
 	// 实际应该读取/proc/uptime和/proc/stat
-	now := time.Now()
+	now := time.Now().UTC()
 	uptime := time.Duration(120) * time.Minute // 模拟2小时运行时间
 	bootTime := now.Add(-uptime)
 
@@ -297,7 +297,7 @@ func (c *SystemCollector) getLinuxNTPStatus(ctx context.Context) (*core.NTPStatu
 	return &core.NTPStatus{
 		Synchronized: true,
 		Server:       "pool.ntp.org",
-		LastSync:     time.Now().Add(-10 * time.Minute),
+		LastSync:     time.Now().UTC().Add(-10 * time.Minute),
 		Offset:       time.Duration(5) * time.Millisecond,
 	}, nil
 }
@@ -330,7 +330,7 @@ func (c *SystemCollector) getLinuxIntegrity(ctx context.Context) (*core.SystemIn
 	// 实际应该检查IMA/EVM、AIDE或其他完整性系统
 	return &core.SystemIntegrity{
 		Status:      "healthy",
-		LastCheck:   time.Now().Add(-12 * time.Hour),
+		LastCheck:   time.Now().UTC().Add(-12 * time.Hour),
 		Issues:      []string{},
 		CheckMethod: "aide",
 	}, nil
@@ -340,7 +340,7 @@ func (c *SystemCollector) getLinuxIntegrity(ctx context.Context) (*core.SystemIn
 func (c *SystemCollector) getDarwinBootTimeAndUptime(ctx context.Context) (time.Time, time.Duration, error) {
 	// 简化实现：使用当前时间减去运行时间
 	// 实际应该使用sysctl kern.boottime
-	now := time.Now()
+	now := time.Now().UTC()
 	uptime := time.Duration(90) * time.Minute // 模拟1.5小时运行时间
 	bootTime := now.Add(-uptime)
 
@@ -353,7 +353,7 @@ func (c *SystemCollector) getDarwinNTPStatus(ctx context.Context) (*core.NTPStat
 	return &core.NTPStatus{
 		Synchronized: true,
 		Server:       "time.apple.com",
-		LastSync:     time.Now().Add(-15 * time.Minute),
+		LastSync:     time.Now().UTC().Add(-15 * time.Minute),
 		Offset:       time.Duration(2) * time.Millisecond,
 	}, nil
 }
@@ -386,7 +386,7 @@ func (c *SystemCollector) getDarwinIntegrity(ctx context.Context) (*core.SystemI
 	// 实际应该使用System Integrity Protection (SIP)状态检查
 	return &core.SystemIntegrity{
 		Status:      "enabled",
-		LastCheck:   time.Now().Add(-6 * time.Hour),
+		LastCheck:   time.Now().UTC().Add(-6 * time.Hour),
 		Issues:      []string{},
 		CheckMethod: "sip",
 	}, nil

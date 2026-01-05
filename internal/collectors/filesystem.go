@@ -170,7 +170,7 @@ func (c *FileSystemCollector) getRecentFiles(ctx context.Context) ([]core.FileIn
 
 	// 只通过时间范围限制，移除文件数量限制
 	maxAge := time.Duration(c.days) * 24 * time.Hour
-	cutoffTime := time.Now().Add(-maxAge)
+	cutoffTime := time.Now().UTC().Add(-maxAge)
 
 	for _, dir := range rootDirectories {
 		select {

@@ -417,7 +417,7 @@ func TestSystemCollector_NTPStatusHandling(t *testing.T) {
 				KernelModules: []core.KernelModule{},
 				Integrity: &core.SystemIntegrity{
 					Status:      "healthy",
-					LastCheck:   time.Now(),
+					LastCheck:   time.Now().UTC(),
 					Issues:      []string{},
 					CheckMethod: "test",
 				},

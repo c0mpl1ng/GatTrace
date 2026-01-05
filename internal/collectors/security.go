@@ -128,7 +128,7 @@ func (c *SecurityCollector) collectGenericSecurityLogs(ctx context.Context) (*co
 // getWindowsSecurityLogs 获取Windows安全日志 - 通过事件日志类型过滤
 func (c *SecurityCollector) getWindowsSecurityLogs(ctx context.Context) ([]core.LogEntry, error) {
 	var entries []core.LogEntry
-	cutoffTime := time.Now().Add(-time.Duration(c.days) * 24 * time.Hour)
+	cutoffTime := time.Now().UTC().Add(-time.Duration(c.days) * 24 * time.Hour)
 
 	// ========== Security 日志 ==========
 	// 认证与登录
@@ -490,9 +490,9 @@ try {
 			continue
 		}
 
-		timestamp := time.Now()
+		timestamp := time.Now().UTC()
 		if t, err := time.Parse(time.RFC3339, strings.TrimSpace(parts[0])); err == nil {
-			timestamp = t.Local()
+			timestamp = t.UTC()
 		}
 
 		eventID := strings.TrimSpace(parts[1])
@@ -558,16 +558,16 @@ func (c *SecurityCollector) parseXMLEvent(eventXML string, cutoffTime time.Time)
 	if len(timeMatch) >= 2 {
 		// 尝试解析 ISO 8601 格式
 		if t, err := time.Parse(time.RFC3339Nano, timeMatch[1]); err == nil {
-			timestamp = t.Local()
+			timestamp = t.UTC()
 		} else if t, err := time.Parse("2006-01-02T15:04:05.000000000Z", timeMatch[1]); err == nil {
-			timestamp = t.Local()
+			timestamp = t.UTC()
 		} else if t, err := time.Parse("2006-01-02T15:04:05Z", timeMatch[1]); err == nil {
-			timestamp = t.Local()
+			timestamp = t.UTC()
 		}
 	}
 
 	if timestamp.IsZero() {
-		timestamp = time.Now()
+		timestamp = time.Now().UTC()
 	}
 
 	// 检查时间是否在范围内
@@ -853,7 +853,7 @@ func (c *SecurityCollector) parseWevtutilEvent(event string, cutoffTime time.Tim
 
 	// 如果时间戳为空，使用当前时间
 	if timestamp.IsZero() {
-		timestamp = time.Now()
+		timestamp = time.Now().UTC()
 	}
 
 	// 检查时间是否在范围内
@@ -1015,9 +1015,9 @@ func (c *SecurityCollector) parseWindowsEventLogJSON(jsonStr, category string) [
 		eventCategory := c.categorizeWindowsEvent(eventID)
 
 		// 解析时间戳
-		timestamp := time.Now()
+		timestamp := time.Now().UTC()
 		if t, err := time.Parse(time.RFC3339, event.TimeCreated); err == nil {
-			timestamp = t.Local()
+			timestamp = t.UTC()
 		}
 
 		// 提取用户（从Message中提取）
@@ -1477,7 +1477,7 @@ func (c *SecurityCollector) extractProcessName(line string) string {
 // getLinuxSecurityLogs 获取Linux安全日志 - 通过日志文件类型过滤
 func (c *SecurityCollector) getLinuxSecurityLogs(ctx context.Context) ([]core.LogEntry, error) {
 	var entries []core.LogEntry
-	cutoffTime := time.Now().Add(-time.Duration(c.days) * 24 * time.Hour)
+	cutoffTime := time.Now().UTC().Add(-time.Duration(c.days) * 24 * time.Hour)
 
 	// Linux 安全相关的日志文件 - 按日志类型分类
 	logSources := []struct {
@@ -1778,7 +1778,7 @@ func (c *SecurityCollector) getLinuxJournalSecurityLogs(ctx context.Context, cut
 // getDarwinSecurityLogs 获取macOS安全日志 - 只收集系统解锁登录相关日志
 func (c *SecurityCollector) getDarwinSecurityLogs(ctx context.Context) ([]core.LogEntry, error) {
 	var entries []core.LogEntry
-	cutoffTime := time.Now().Add(-time.Duration(c.days) * 24 * time.Hour)
+	cutoffTime := time.Now().UTC().Add(-time.Duration(c.days) * 24 * time.Hour)
 
 	// 使用 log show 获取统一日志 - 只获取登录/解锁相关
 	unifiedEntries, err := c.getDarwinUnifiedSecurityLogs(ctx, cutoffTime)
@@ -2212,8 +2212,8 @@ func (c *SecurityCollector) extractTimestamp(line string) (time.Time, error) {
 	rfc3339Regex := regexp.MustCompile(`\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})`)
 	if match := rfc3339Regex.FindString(line); match != "" {
 		if t, err := time.Parse(time.RFC3339, match); err == nil {
-			// 转换为本地时间显示
-			return t.Local(), nil
+			// 转换为UTC时间
+			return t.UTC(), nil
 		}
 	}
 
