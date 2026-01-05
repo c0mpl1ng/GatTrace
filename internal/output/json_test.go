@@ -25,7 +25,7 @@ func TestJSONSerializer_WriteJSON(t *testing.T) {
 			Hostname:         "test-host",
 			Platform:         "test-platform",
 			CollectedAt:      time.Now().UTC(),
-			CollectorVersion: "v1.0.0",
+			CollectorVersion: core.Version,
 		},
 		Interfaces: []core.NetworkInterface{
 			{
@@ -67,7 +67,7 @@ func TestJSONSerializer_ValidateMetadata(t *testing.T) {
 			Hostname:         "valid-host",
 			Platform:         "valid-platform",
 			CollectedAt:      time.Now().UTC(),
-			CollectorVersion: "v1.0.0",
+			CollectorVersion: core.Version,
 		},
 	}
 
@@ -88,7 +88,7 @@ func TestJSONSerializer_ValidateMetadata(t *testing.T) {
 					Hostname:         "host",
 					Platform:         "platform",
 					CollectedAt:      time.Now().UTC(),
-					CollectorVersion: "v1.0.0",
+					CollectorVersion: core.Version,
 				},
 			},
 		},
@@ -99,7 +99,7 @@ func TestJSONSerializer_ValidateMetadata(t *testing.T) {
 					SessionID:        "session",
 					Platform:         "platform",
 					CollectedAt:      time.Now().UTC(),
-					CollectorVersion: "v1.0.0",
+					CollectorVersion: core.Version,
 				},
 			},
 		},
@@ -110,7 +110,7 @@ func TestJSONSerializer_ValidateMetadata(t *testing.T) {
 					SessionID:        "session",
 					Hostname:         "host",
 					Platform:         "platform",
-					CollectorVersion: "v1.0.0",
+					CollectorVersion: core.Version,
 				},
 			},
 		},

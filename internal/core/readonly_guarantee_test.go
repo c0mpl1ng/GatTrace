@@ -41,7 +41,7 @@ func TestReadOnlyOperationGuarantee(t *testing.T) {
 		defer os.RemoveAll(tempDir)
 
 		// 创建应用程序实例
-		app := NewApplication("test-v1.0.0")
+		app := NewApplication("test-" + Version)
 
 		// 创建系统监控器来验证只读操作
 		monitor := NewSystemMonitor()
@@ -311,7 +311,7 @@ func TestReadOnlyOperationGuaranteeSpecificCases(t *testing.T) {
 			defer os.RemoveAll(tempDir)
 
 			// 创建应用程序实例
-			app := NewApplication("test-v1.0.0")
+			app := NewApplication("test-" + Version)
 
 			// 创建系统监控器
 			monitor := NewSystemMonitor()
@@ -361,7 +361,7 @@ func BenchmarkReadOnlyOperationGuarantee(b *testing.B) {
 		}
 
 		// 创建应用程序实例
-		app := NewApplication("bench-v1.0.0")
+		app := NewApplication("bench-" + Version)
 
 		// 创建系统监控器
 		monitor := NewSystemMonitor()

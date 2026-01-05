@@ -32,7 +32,7 @@ func NewWindowsAdapter() *WindowsAdapter {
 
 // GetNetworkInfo 获取网络信息
 func (w *WindowsAdapter) GetNetworkInfo() (*core.NetworkInfo, error) {
-	sessionManager, err := core.NewSessionManager("1.0.0")
+	sessionManager, err := core.NewSessionManager(core.Version)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create session manager: %w", err)
 	}
@@ -79,7 +79,7 @@ func (w *WindowsAdapter) GetNetworkInfo() (*core.NetworkInfo, error) {
 
 // GetProcessInfo 获取进程信息
 func (w *WindowsAdapter) GetProcessInfo() (*core.ProcessInfo, error) {
-	sessionManager, err := core.NewSessionManager("1.0.0")
+	sessionManager, err := core.NewSessionManager(core.Version)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create session manager: %w", err)
 	}
@@ -101,7 +101,7 @@ func (w *WindowsAdapter) GetProcessInfo() (*core.ProcessInfo, error) {
 
 // GetUserInfo 获取用户信息
 func (w *WindowsAdapter) GetUserInfo() (*core.UserInfo, error) {
-	sessionManager, err := core.NewSessionManager("1.0.0")
+	sessionManager, err := core.NewSessionManager(core.Version)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create session manager: %w", err)
 	}
@@ -133,7 +133,7 @@ func (w *WindowsAdapter) GetUserInfo() (*core.UserInfo, error) {
 
 // GetPersistenceInfo 获取持久化信息
 func (w *WindowsAdapter) GetPersistenceInfo() (*core.PersistenceInfo, error) {
-	sessionManager, err := core.NewSessionManager("1.0.0")
+	sessionManager, err := core.NewSessionManager(core.Version)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create session manager: %w", err)
 	}
@@ -169,7 +169,7 @@ func (w *WindowsAdapter) GetPersistenceInfo() (*core.PersistenceInfo, error) {
 
 // GetFileSystemInfo 获取文件系统信息
 func (w *WindowsAdapter) GetFileSystemInfo() (*core.FileSystemInfo, error) {
-	sessionManager, err := core.NewSessionManager("1.0.0")
+	sessionManager, err := core.NewSessionManager(core.Version)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create session manager: %w", err)
 	}
@@ -191,7 +191,7 @@ func (w *WindowsAdapter) GetFileSystemInfo() (*core.FileSystemInfo, error) {
 
 // GetSecurityLogs 获取安全日志
 func (w *WindowsAdapter) GetSecurityLogs() (*core.SecurityLogs, error) {
-	sessionManager, err := core.NewSessionManager("1.0.0")
+	sessionManager, err := core.NewSessionManager(core.Version)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create session manager: %w", err)
 	}
@@ -213,7 +213,7 @@ func (w *WindowsAdapter) GetSecurityLogs() (*core.SecurityLogs, error) {
 
 // GetSystemInfo 获取系统信息
 func (w *WindowsAdapter) GetSystemInfo() (*core.SystemInfo, error) {
-	sessionManager, err := core.NewSessionManager("1.0.0")
+	sessionManager, err := core.NewSessionManager(core.Version)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create session manager: %w", err)
 	}
@@ -252,7 +252,7 @@ func (w *WindowsAdapter) GetSystemInfo() (*core.SystemInfo, error) {
 
 // GetSystemStatus 获取系统状态
 func (w *WindowsAdapter) GetSystemStatus() (*core.SystemStatus, error) {
-	sessionManager, err := core.NewSessionManager("1.0.0")
+	sessionManager, err := core.NewSessionManager(core.Version)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create session manager: %w", err)
 	}

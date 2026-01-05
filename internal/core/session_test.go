@@ -6,7 +6,7 @@ import (
 )
 
 func TestNewSessionManager(t *testing.T) {
-	version := "v1.0.0"
+	version := Version
 	sm, err := NewSessionManager(version)
 	if err != nil {
 		t.Fatalf("NewSessionManager failed: %v", err)
@@ -41,7 +41,7 @@ func TestSessionIDUniqueness(t *testing.T) {
 	sessions := make(map[string]bool)
 
 	for i := 0; i < 100; i++ {
-		sm, err := NewSessionManager("v1.0.0")
+		sm, err := NewSessionManager(Version)
 		if err != nil {
 			t.Fatalf("NewSessionManager failed: %v", err)
 		}
@@ -55,7 +55,7 @@ func TestSessionIDUniqueness(t *testing.T) {
 }
 
 func TestGetMetadata(t *testing.T) {
-	version := "v1.0.0"
+	version := Version
 	sm, err := NewSessionManager(version)
 	if err != nil {
 		t.Fatalf("NewSessionManager failed: %v", err)

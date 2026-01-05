@@ -15,7 +15,7 @@ import (
 func TestIntegrityManager_CalculateFileHash(t *testing.T) {
 	// 创建临时目录和会话管理器
 	tempDir := t.TempDir()
-	sessionManager, err := core.NewSessionManager("v1.0.0")
+	sessionManager, err := core.NewSessionManager(core.Version)
 	if err != nil {
 		t.Fatalf("Failed to create session manager: %v", err)
 	}
@@ -63,7 +63,7 @@ func TestIntegrityManager_CalculateFileHash(t *testing.T) {
 func TestIntegrityManager_CreateManifest(t *testing.T) {
 	// 创建临时目录和会话管理器
 	tempDir := t.TempDir()
-	sessionManager, err := core.NewSessionManager("v1.0.0")
+	sessionManager, err := core.NewSessionManager(core.Version)
 	if err != nil {
 		t.Fatalf("Failed to create session manager: %v", err)
 	}
@@ -117,7 +117,7 @@ func TestProperty_FileIntegrityVerification(t *testing.T) {
 
 		// 创建临时目录和会话管理器
 		tempDir := t.TempDir()
-		sessionManager, err := core.NewSessionManager("v1.0.0")
+		sessionManager, err := core.NewSessionManager(core.Version)
 		if err != nil {
 			return false
 		}
@@ -198,7 +198,7 @@ func TestProperty_HashConsistency(t *testing.T) {
 
 		// 创建临时目录和会话管理器
 		tempDir := t.TempDir()
-		sessionManager, err := core.NewSessionManager("v1.0.0")
+		sessionManager, err := core.NewSessionManager(core.Version)
 		if err != nil {
 			return false
 		}
@@ -253,7 +253,7 @@ func TestProperty_ManifestIntegrity(t *testing.T) {
 
 		// 创建临时目录和会话管理器
 		tempDir := t.TempDir()
-		sessionManager, err := core.NewSessionManager("v1.0.0")
+		sessionManager, err := core.NewSessionManager(core.Version)
 		if err != nil {
 			return false
 		}

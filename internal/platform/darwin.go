@@ -33,7 +33,7 @@ func NewDarwinAdapter() *DarwinAdapter {
 
 // GetNetworkInfo 获取网络信息
 func (d *DarwinAdapter) GetNetworkInfo() (*core.NetworkInfo, error) {
-	sessionManager, err := core.NewSessionManager("1.0.0")
+	sessionManager, err := core.NewSessionManager(core.Version)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create session manager: %w", err)
 	}
@@ -87,7 +87,7 @@ func (d *DarwinAdapter) GetNetworkInfo() (*core.NetworkInfo, error) {
 
 // GetProcessInfo 获取进程信息
 func (d *DarwinAdapter) GetProcessInfo() (*core.ProcessInfo, error) {
-	sessionManager, err := core.NewSessionManager("1.0.0")
+	sessionManager, err := core.NewSessionManager(core.Version)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create session manager: %w", err)
 	}
@@ -109,7 +109,7 @@ func (d *DarwinAdapter) GetProcessInfo() (*core.ProcessInfo, error) {
 
 // GetUserInfo 获取用户信息
 func (d *DarwinAdapter) GetUserInfo() (*core.UserInfo, error) {
-	sessionManager, err := core.NewSessionManager("1.0.0")
+	sessionManager, err := core.NewSessionManager(core.Version)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create session manager: %w", err)
 	}
@@ -155,7 +155,7 @@ func (d *DarwinAdapter) GetUserInfo() (*core.UserInfo, error) {
 
 // GetPersistenceInfo 获取持久化信息
 func (d *DarwinAdapter) GetPersistenceInfo() (*core.PersistenceInfo, error) {
-	sessionManager, err := core.NewSessionManager("1.0.0")
+	sessionManager, err := core.NewSessionManager(core.Version)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create session manager: %w", err)
 	}
@@ -198,7 +198,7 @@ func (d *DarwinAdapter) GetPersistenceInfo() (*core.PersistenceInfo, error) {
 
 // GetFileSystemInfo 获取文件系统信息
 func (d *DarwinAdapter) GetFileSystemInfo() (*core.FileSystemInfo, error) {
-	sessionManager, err := core.NewSessionManager("1.0.0")
+	sessionManager, err := core.NewSessionManager(core.Version)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create session manager: %w", err)
 	}
@@ -220,7 +220,7 @@ func (d *DarwinAdapter) GetFileSystemInfo() (*core.FileSystemInfo, error) {
 
 // GetSecurityLogs 获取安全日志
 func (d *DarwinAdapter) GetSecurityLogs() (*core.SecurityLogs, error) {
-	sessionManager, err := core.NewSessionManager("1.0.0")
+	sessionManager, err := core.NewSessionManager(core.Version)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create session manager: %w", err)
 	}
@@ -249,7 +249,7 @@ func (d *DarwinAdapter) GetSecurityLogs() (*core.SecurityLogs, error) {
 
 // GetSystemInfo 获取系统信息
 func (d *DarwinAdapter) GetSystemInfo() (*core.SystemInfo, error) {
-	sessionManager, err := core.NewSessionManager("1.0.0")
+	sessionManager, err := core.NewSessionManager(core.Version)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create session manager: %w", err)
 	}
@@ -295,7 +295,7 @@ func (d *DarwinAdapter) GetSystemInfo() (*core.SystemInfo, error) {
 
 // GetSystemStatus 获取系统状态
 func (d *DarwinAdapter) GetSystemStatus() (*core.SystemStatus, error) {
-	sessionManager, err := core.NewSessionManager("1.0.0")
+	sessionManager, err := core.NewSessionManager(core.Version)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create session manager: %w", err)
 	}

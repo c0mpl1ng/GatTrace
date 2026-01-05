@@ -18,7 +18,7 @@ func TestOutputSystemIntegration(t *testing.T) {
 	defer os.RemoveAll(tempDir)
 
 	// 创建会话管理器
-	sessionManager, err := core.NewSessionManager("v1.0.0")
+	sessionManager, err := core.NewSessionManager(core.Version)
 	if err != nil {
 		t.Fatalf("Failed to create session manager: %v", err)
 	}

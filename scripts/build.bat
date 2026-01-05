@@ -5,7 +5,7 @@ setlocal enabledelayedexpansion
 
 REM 项目信息
 set PROJECT_NAME=GatTrace
-if "%VERSION%"=="" set VERSION=1.0.0
+if "%VERSION%"=="" set VERSION=1.1.1
 for /f "tokens=*" %%i in ('powershell -Command "Get-Date -UFormat '%%Y-%%m-%%dT%%H:%%M:%%SZ'"') do set BUILD_TIME=%%i
 if "%GIT_COMMIT%"=="" (
     for /f "tokens=*" %%i in ('git rev-parse --short HEAD 2^>nul') do set GIT_COMMIT=%%i
