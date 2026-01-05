@@ -11,6 +11,8 @@ GIT_COMMIT := $(shell git rev-parse --short HEAD 2>/dev/null || echo "unknown")
 BUILD_DIR := release
 BINARY_NAME := GatTrace
 LDFLAGS := -s -w -X main.Version=$(VERSION) -X main.BuildTime=$(BUILD_TIME) -X main.GitCommit=$(GIT_COMMIT)
+# -trimpath 移除编译路径信息，保护隐私
+BUILDFLAGS := -trimpath
 
 # Go 配置
 GOCMD := go
@@ -55,7 +57,7 @@ test-fast:
 build:
 	@echo "🔨 构建本地版本..."
 	@mkdir -p $(BUILD_DIR)
-	@$(GOBUILD) -ldflags="$(LDFLAGS)" -o $(BUILD_DIR)/$(BINARY_NAME) ./cmd/GatTrace
+	@$(GOBUILD) $(BUILDFLAGS) -ldflags="$(LDFLAGS)" -o $(BUILD_DIR)/$(BINARY_NAME) ./cmd/GatTrace
 	@echo "✅ 构建完成: $(BUILD_DIR)/$(BINARY_NAME)"
 
 # 跨平台构建
@@ -69,24 +71,24 @@ build-all:
 build-windows:
 	@echo "🔨 构建 Windows 版本..."
 	@mkdir -p $(BUILD_DIR)
-	@GOOS=windows GOARCH=amd64 $(GOBUILD) -ldflags="$(LDFLAGS)" -o $(BUILD_DIR)/$(BINARY_NAME)-windows-amd64.exe ./cmd/GatTrace
-	@GOOS=windows GOARCH=arm64 $(GOBUILD) -ldflags="$(LDFLAGS)" -o $(BUILD_DIR)/$(BINARY_NAME)-windows-arm64.exe ./cmd/GatTrace
+	@GOOS=windows GOARCH=amd64 $(GOBUILD) $(BUILDFLAGS) -ldflags="$(LDFLAGS)" -o $(BUILD_DIR)/$(BINARY_NAME)-windows-amd64.exe ./cmd/GatTrace
+	@GOOS=windows GOARCH=arm64 $(GOBUILD) $(BUILDFLAGS) -ldflags="$(LDFLAGS)" -o $(BUILD_DIR)/$(BINARY_NAME)-windows-arm64.exe ./cmd/GatTrace
 
 # Linux 构建
 .PHONY: build-linux
 build-linux:
 	@echo "🔨 构建 Linux 版本..."
 	@mkdir -p $(BUILD_DIR)
-	@GOOS=linux GOARCH=amd64 $(GOBUILD) -ldflags="$(LDFLAGS)" -o $(BUILD_DIR)/$(BINARY_NAME)-linux-amd64 ./cmd/GatTrace
-	@GOOS=linux GOARCH=arm64 $(GOBUILD) -ldflags="$(LDFLAGS)" -o $(BUILD_DIR)/$(BINARY_NAME)-linux-arm64 ./cmd/GatTrace
+	@GOOS=linux GOARCH=amd64 $(GOBUILD) $(BUILDFLAGS) -ldflags="$(LDFLAGS)" -o $(BUILD_DIR)/$(BINARY_NAME)-linux-amd64 ./cmd/GatTrace
+	@GOOS=linux GOARCH=arm64 $(GOBUILD) $(BUILDFLAGS) -ldflags="$(LDFLAGS)" -o $(BUILD_DIR)/$(BINARY_NAME)-linux-arm64 ./cmd/GatTrace
 
 # macOS 构建
 .PHONY: build-darwin
 build-darwin:
 	@echo "🔨 构建 macOS 版本..."
 	@mkdir -p $(BUILD_DIR)
-	@GOOS=darwin GOARCH=amd64 $(GOBUILD) -ldflags="$(LDFLAGS)" -o $(BUILD_DIR)/$(BINARY_NAME)-darwin-amd64 ./cmd/GatTrace
-	@GOOS=darwin GOARCH=arm64 $(GOBUILD) -ldflags="$(LDFLAGS)" -o $(BUILD_DIR)/$(BINARY_NAME)-darwin-arm64 ./cmd/GatTrace
+	@GOOS=darwin GOARCH=amd64 $(GOBUILD) $(BUILDFLAGS) -ldflags="$(LDFLAGS)" -o $(BUILD_DIR)/$(BINARY_NAME)-darwin-amd64 ./cmd/GatTrace
+	@GOOS=darwin GOARCH=arm64 $(GOBUILD) $(BUILDFLAGS) -ldflags="$(LDFLAGS)" -o $(BUILD_DIR)/$(BINARY_NAME)-darwin-arm64 ./cmd/GatTrace
 
 # 运行
 .PHONY: run

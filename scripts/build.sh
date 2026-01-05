@@ -30,7 +30,9 @@ rm -rf ${BUILD_DIR}
 mkdir -p ${BUILD_DIR}
 
 # 构建标志
+# -trimpath 移除编译路径信息，保护隐私
 LDFLAGS="-s -w -X main.Version=${VERSION} -X main.BuildTime=${BUILD_TIME} -X main.GitCommit=${GIT_COMMIT}"
+BUILDFLAGS="-trimpath"
 
 echo "🚀 开始跨平台构建..."
 echo "版本: ${VERSION}"
@@ -57,6 +59,7 @@ for platform in "${PLATFORMS[@]}"; do
     echo "🔨 构建 ${GOOS}/${GOARCH}..."
     
     env GOOS=$GOOS GOARCH=$GOARCH go build \
+        ${BUILDFLAGS} \
         -ldflags="${LDFLAGS}" \
         -o ${output_path} \
         ./cmd/GatTrace

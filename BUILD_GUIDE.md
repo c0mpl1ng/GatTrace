@@ -100,7 +100,7 @@ GOOS=darwin GOARCH=arm64 CGO_ENABLED=0 go build -ldflags="$LDFLAGS" -trimpath -o
 
 ## 🔧 环境要求
 
-- **Go 1.19+** (推荐 1.21+)
+- **Go 1.20+** (推荐 1.20+)
 - **Git** (用于获取提交哈希)
 - **Make** (可选，用于 Makefile)
 
@@ -239,7 +239,7 @@ jobs:
     - uses: actions/checkout@v3
     - uses: actions/setup-go@v3
       with:
-        go-version: '1.21'
+        go-version: '1.20'
     - name: Build all platforms
       run: make build-all
     - name: Upload artifacts
@@ -251,7 +251,7 @@ jobs:
 
 ### Docker构建
 ```dockerfile
-FROM golang:1.21-alpine AS builder
+FROM golang:1.20-alpine AS builder
 WORKDIR /app
 COPY . .
 RUN apk add --no-cache make git

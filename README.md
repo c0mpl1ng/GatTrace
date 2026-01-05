@@ -219,7 +219,7 @@ GatTrace --days 7 --output ./output
 ## 🏗️ 构建和开发
 
 ### 环境要求
-- Go 1.21 或更高版本
+- Go 1.20 或更高版本
 - Git
 - Make (Unix 系统) 或 nmake (Windows)
 
