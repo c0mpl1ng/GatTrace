@@ -13,6 +13,9 @@ import (
 // **验证: 需求 13.2, 13.3, 13.4, 13.5**
 // Feature: ir-system-info-collector, Property 11: 跨平台一致性
 func TestProperty_CrossPlatformConsistency(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping cross-platform consistency test in short mode")
+	}
 	// 为所有支持的平台创建适配器
 	adapters := map[string]core.PlatformAdapter{
 		"windows": NewWindowsAdapter(),
@@ -148,6 +151,10 @@ func getPlatformFromGOOS(goos string) core.Platform {
 // **验证: 需求 13.2, 13.3, 13.4, 13.5**
 // Feature: ir-system-info-collector, Property 11: 跨平台一致性
 func TestProperty_MetadataConsistency(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping metadata consistency test in short mode")
+	}
+
 	// 只在当前平台上测试实际的适配器
 	adapter, err := NewPlatformAdapter()
 	if err != nil {
@@ -370,6 +377,10 @@ func TestProperty_PlatformCapabilityConsistency(t *testing.T) {
 // **验证: 需求 13.2, 13.3, 13.4, 13.5**
 // Feature: ir-system-info-collector, Property 11: 跨平台一致性
 func TestProperty_DataStructureConsistency(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping data structure consistency test in short mode")
+	}
+
 	// 只在当前平台上测试实际的数据结构
 	adapter, err := NewPlatformAdapter()
 	if err != nil {

@@ -21,6 +21,9 @@ func TestLinuxAdapter_Creation(t *testing.T) {
 }
 
 func TestLinuxAdapter_GetNetworkInfo(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping Linux network info test in short mode")
+	}
 	if runtime.GOOS != "linux" {
 		t.Skip("Skipping Linux-specific test on non-Linux platform")
 	}
@@ -51,6 +54,9 @@ func TestLinuxAdapter_GetNetworkInfo(t *testing.T) {
 }
 
 func TestLinuxAdapter_GetProcessInfo(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping Linux process info test in short mode")
+	}
 	if runtime.GOOS != "linux" {
 		t.Skip("Skipping Linux-specific test on non-Linux platform")
 	}
@@ -84,6 +90,9 @@ func TestLinuxAdapter_GetProcessInfo(t *testing.T) {
 }
 
 func TestLinuxAdapter_GetUserInfo(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping Linux user info test in short mode")
+	}
 	if runtime.GOOS != "linux" {
 		t.Skip("Skipping Linux-specific test on non-Linux platform")
 	}
@@ -110,6 +119,9 @@ func TestLinuxAdapter_GetUserInfo(t *testing.T) {
 }
 
 func TestLinuxAdapter_GetPersistenceInfo(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping Linux persistence info test in short mode")
+	}
 	if runtime.GOOS != "linux" {
 		t.Skip("Skipping Linux-specific test on non-Linux platform")
 	}
@@ -133,6 +145,9 @@ func TestLinuxAdapter_GetPersistenceInfo(t *testing.T) {
 }
 
 func TestLinuxAdapter_GetFileSystemInfo(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping Linux filesystem info test in short mode")
+	}
 	if runtime.GOOS != "linux" {
 		t.Skip("Skipping Linux-specific test on non-Linux platform")
 	}
@@ -156,6 +171,9 @@ func TestLinuxAdapter_GetFileSystemInfo(t *testing.T) {
 }
 
 func TestLinuxAdapter_GetSecurityLogs(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping Linux security logs test in short mode")
+	}
 	if runtime.GOOS != "linux" {
 		t.Skip("Skipping Linux-specific test on non-Linux platform")
 	}
@@ -179,6 +197,9 @@ func TestLinuxAdapter_GetSecurityLogs(t *testing.T) {
 }
 
 func TestLinuxAdapter_GetSystemInfo(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping Linux system info test in short mode")
+	}
 	if runtime.GOOS != "linux" {
 		t.Skip("Skipping Linux-specific test on non-Linux platform")
 	}
@@ -209,6 +230,9 @@ func TestLinuxAdapter_GetSystemInfo(t *testing.T) {
 }
 
 func TestLinuxAdapter_PlatformSpecificMethods(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping Linux platform specific methods test in short mode")
+	}
 	if runtime.GOOS != "linux" {
 		t.Skip("Skipping Linux-specific test on non-Linux platform")
 	}
@@ -307,6 +331,9 @@ func TestLinuxAdapter_ErrorHandling(t *testing.T) {
 }
 
 func TestLinuxAdapter_UtilityMethods(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping Linux utility methods test in short mode")
+	}
 	if runtime.GOOS != "linux" {
 		t.Skip("Skipping Linux-specific test on non-Linux platform")
 	}
