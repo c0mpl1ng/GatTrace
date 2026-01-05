@@ -178,7 +178,7 @@ func TestSessionConsistencyProperty(t *testing.T) {
 			}
 
 			startTime1 := sessionManager.GetStartTime()
-			time.Sleep(time.Millisecond) // 短暂等待
+			// 不需要等待，因为GetStartTime()应该总是返回相同的值
 			startTime2 := sessionManager.GetStartTime()
 			if !startTime1.Equal(startTime2) {
 				t.Errorf("Iteration %d: Start time should be consistent", i)

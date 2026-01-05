@@ -230,8 +230,8 @@ func TestCollectorContextHandling(t *testing.T) {
 			ctx, cancel := context.WithTimeout(context.Background(), 1*time.Millisecond)
 			defer cancel()
 
-			// 等待超时
-			time.Sleep(2 * time.Millisecond)
+			// 等待确保上下文超时
+			<-ctx.Done()
 
 			// 采集应该仍然成功（因为是快速操作）或优雅处理超时
 			result, err := collector.Collect(ctx)
