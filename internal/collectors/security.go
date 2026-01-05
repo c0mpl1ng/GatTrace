@@ -154,10 +154,33 @@ func (c *SecurityCollector) getWindowsSecurityLogs(ctx context.Context) ([]core.
 		securityAllIDs[id] = true
 	}
 
-	// 查询 Security 日志
+	// 查询 Security 日志 - 需要管理员权限
+	// 首先尝试使用 wevtutil 直接查询
 	securityEntries, err := c.queryWindowsEventLogDirect(ctx, "Security", securityAllIDs, cutoffTime)
-	if err != nil {
-		securityEntries, _ = c.queryWindowsEventLogWevtutil(ctx, "Security", "authentication", cutoffTime)
+	if err != nil || len(securityEntries) == 0 {
+		// 如果直接查询失败或没有结果，尝试简化的 wevtutil 查询（不带事件ID过滤）
+		simpleEntries, simpleErr := c.querySecurityLogSimple(ctx, cutoffTime, securityAllIDs)
+		if simpleErr == nil && len(simpleEntries) > 0 {
+			securityEntries = simpleEntries
+		} else {
+			// 最后尝试 PowerShell 方法
+			var idList []string
+			for id := range securityAllIDs {
+				idList = append(idList, fmt.Sprintf("%d", id))
+			}
+			eventIDFilter := strings.Join(idList, ",")
+			psEntries, psErr := c.queryWindowsEventLogPowerShell(ctx, "Security", eventIDFilter, c.days)
+			if psErr == nil {
+				securityEntries = psEntries
+			}
+		}
+	}
+	// 标记日志来源
+	for i := range securityEntries {
+		if securityEntries[i].Details == nil {
+			securityEntries[i].Details = make(map[string]string)
+		}
+		securityEntries[i].Details["log_source"] = "Security"
 	}
 	entries = append(entries, securityEntries...)
 
@@ -258,12 +281,69 @@ func (c *SecurityCollector) queryWindowsDefenderLogs(ctx context.Context, cutoff
 	return entries, nil
 }
 
-// queryWindowsEventLogDirect 直接查询Windows事件日志
-func (c *SecurityCollector) queryWindowsEventLogDirect(ctx context.Context, channel string, eventIDs map[int]bool, cutoffTime time.Time) ([]core.LogEntry, error) {
+// querySecurityLogSimple 使用简化的方式查询 Security 日志
+// 不使用复杂的 XPath 事件ID过滤，而是获取时间范围内的所有日志，然后在代码中过滤
+func (c *SecurityCollector) querySecurityLogSimple(ctx context.Context, cutoffTime time.Time, eventIDs map[int]bool) ([]core.LogEntry, error) {
 	var entries []core.LogEntry
 	daysAgo := c.days
 
-	// 构建事件ID过滤字符串
+	// 使用简单的时间过滤 XPath
+	startTime := time.Now().AddDate(0, 0, -daysAgo)
+	timeFilter := startTime.UTC().Format("2006-01-02T15:04:05.000Z")
+	xpath := fmt.Sprintf("*[System[TimeCreated[@SystemTime>='%s']]]", timeFilter)
+
+	// 使用 wevtutil 查询，使用 XML 格式输出（更容易解析）
+	cmd := exec.CommandContext(ctx, "wevtutil", "qe", "Security", "/q:"+xpath, "/rd:true", "/f:RenderedXml", "/c:5000")
+	output, err := cmd.Output()
+	if err != nil {
+		// 如果 XML 格式失败，回退到 text 格式
+		cmd = exec.CommandContext(ctx, "wevtutil", "qe", "Security", "/q:"+xpath, "/rd:true", "/f:text", "/c:5000")
+		output, err = cmd.Output()
+		if err != nil {
+			return entries, fmt.Errorf("wevtutil query failed: %v", err)
+		}
+		// 解码输出
+		outputStr := decodeGBKBytes(output)
+		// 解析并过滤事件
+		allEntries := c.parseWevtutilTextOutput(outputStr, cutoffTime)
+		// 只保留我们关心的事件ID
+		for _, entry := range allEntries {
+			if entry.EventID != "" {
+				var eventIDInt int
+				if _, err := fmt.Sscanf(entry.EventID, "%d", &eventIDInt); err == nil {
+					if eventIDs[eventIDInt] {
+						entries = append(entries, entry)
+					}
+				}
+			}
+		}
+		return entries, nil
+	}
+
+	// 解析 XML 格式输出
+	outputStr := string(output)
+	allEntries := c.parseWevtutilXMLOutput(outputStr, cutoffTime)
+	
+	// 只保留我们关心的事件ID
+	for _, entry := range allEntries {
+		if entry.EventID != "" {
+			var eventIDInt int
+			if _, err := fmt.Sscanf(entry.EventID, "%d", &eventIDInt); err == nil {
+				if eventIDs[eventIDInt] {
+					entries = append(entries, entry)
+				}
+			}
+		}
+	}
+
+	return entries, nil
+}
+
+// queryWindowsEventLogDirect 直接查询Windows事件日志
+func (c *SecurityCollector) queryWindowsEventLogDirect(ctx context.Context, channel string, eventIDs map[int]bool, cutoffTime time.Time) ([]core.LogEntry, error) {
+	daysAgo := c.days
+
+	// 构建事件ID过滤字符串（用于 PowerShell 回退）
 	var idList []string
 	for id := range eventIDs {
 		idList = append(idList, fmt.Sprintf("%d", id))
@@ -273,64 +353,122 @@ func (c *SecurityCollector) queryWindowsEventLogDirect(ctx context.Context, chan
 	// 使用 wevtutil 获取事件日志，它能更好地获取本地化的消息
 	// 构建 XPath 查询
 	startTime := time.Now().AddDate(0, 0, -daysAgo)
-	// Windows 事件日志时间格式
+	// Windows 事件日志时间格式 - 使用正确的格式
 	timeFilter := startTime.UTC().Format("2006-01-02T15:04:05.000Z")
 	
-	// 构建事件ID过滤条件
-	var idConditions []string
+	// 构建事件ID过滤条件 - 如果事件ID太多，分批查询
+	var allEntries []core.LogEntry
+	var lastErr error
+	
+	// 将事件ID转换为切片以便分批处理
+	var idSlice []int
 	for id := range eventIDs {
-		idConditions = append(idConditions, fmt.Sprintf("EventID=%d", id))
+		idSlice = append(idSlice, id)
 	}
-	idFilter := strings.Join(idConditions, " or ")
 	
-	// XPath 查询
-	xpath := fmt.Sprintf("*[System[TimeCreated[@SystemTime>='%s'] and (%s)]]", timeFilter, idFilter)
-	
-	// 使用 wevtutil 查询，/rd:true 表示从最新到最旧，/f:text 输出文本格式
-	cmd := exec.CommandContext(ctx, "wevtutil", "qe", channel, "/q:"+xpath, "/c:500", "/rd:true", "/f:text")
-	output, err := cmd.Output()
-	if err != nil {
-		// 如果 wevtutil 失败，回退到 PowerShell 方法
-		return c.queryWindowsEventLogPowerShell(ctx, channel, eventIDFilter, daysAgo)
-	}
+	// 每批最多处理 20 个事件ID，避免 XPath 查询过长
+	batchSize := 20
+	for i := 0; i < len(idSlice); i += batchSize {
+		end := i + batchSize
+		if end > len(idSlice) {
+			end = len(idSlice)
+		}
+		batch := idSlice[i:end]
+		
+		// 构建当前批次的事件ID过滤条件
+		var idConditions []string
+		for _, id := range batch {
+			idConditions = append(idConditions, fmt.Sprintf("EventID=%d", id))
+		}
+		idFilter := strings.Join(idConditions, " or ")
+		
+		// XPath 查询
+		xpath := fmt.Sprintf("*[System[TimeCreated[@SystemTime>='%s'] and (%s)]]", timeFilter, idFilter)
+		
+		// 使用 wevtutil 查询，/rd:true 表示从最新到最旧，/f:RenderedXml 输出 XML 格式（包含完整消息）
+		cmd := exec.CommandContext(ctx, "wevtutil", "qe", channel, "/q:"+xpath, "/rd:true", "/f:RenderedXml")
+		output, err := cmd.Output()
+		if err != nil {
+			lastErr = err
+			// 如果 wevtutil 失败，回退到 PowerShell 方法（只对当前批次）
+			batchIDFilter := strings.Join(func() []string {
+				var s []string
+				for _, id := range batch {
+					s = append(s, fmt.Sprintf("%d", id))
+				}
+				return s
+			}(), ",")
+			batchEntries, psErr := c.queryWindowsEventLogPowerShell(ctx, channel, batchIDFilter, daysAgo)
+			if psErr != nil {
+				lastErr = psErr
+				continue
+			}
+			allEntries = append(allEntries, batchEntries...)
+			continue
+		}
 
-	// wevtutil 输出使用系统默认编码（中文 Windows 是 GBK）
-	// 需要将 GBK 转换为 UTF-8
-	outputStr := decodeGBKBytes(output)
+		// XML 输出在中文 Windows 上也可能是 GBK 编码
+		outputStr := decodeGBKBytes(output)
+		
+		// 解析 wevtutil XML 输出
+		batchEntries := c.parseWevtutilXMLOutput(outputStr, cutoffTime)
+		allEntries = append(allEntries, batchEntries...)
+	}
 	
-	// 解析 wevtutil 文本输出
-	entries = c.parseWevtutilTextOutput(outputStr, cutoffTime)
+	// 如果所有批次都失败了，尝试完整的 PowerShell 查询
+	if len(allEntries) == 0 {
+		psEntries, err := c.queryWindowsEventLogPowerShell(ctx, channel, eventIDFilter, daysAgo)
+		if err != nil {
+			return nil, fmt.Errorf("failed to query %s log: %v", channel, lastErr)
+		}
+		return psEntries, nil
+	}
 	
-	return entries, nil
+	return allEntries, nil
 }
 
 // queryWindowsEventLogPowerShell 使用 PowerShell 查询事件日志（备用方法）
 func (c *SecurityCollector) queryWindowsEventLogPowerShell(ctx context.Context, channel, eventIDFilter string, daysAgo int) ([]core.LogEntry, error) {
 	var entries []core.LogEntry
 
-	// 使用PowerShell获取事件
+	// 使用PowerShell获取事件 - 直接在 FilterHashtable 中指定事件ID，效率更高
+	// 注意：Security 日志需要管理员权限
 	psScript := fmt.Sprintf(`
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 $OutputEncoding = [System.Text.Encoding]::UTF8
-$events = Get-WinEvent -FilterHashtable @{LogName='%s'; StartTime=(Get-Date).AddDays(-%d)} -MaxEvents 500 -ErrorAction SilentlyContinue | Where-Object { $_.Id -in @(%s) }
-foreach ($e in $events) {
-    $time = $e.TimeCreated.ToString('o')
-    $id = $e.Id
-    $level = $e.LevelDisplayName
-    $provider = $e.ProviderName
-    $msg = $e.Message
-    if ([string]::IsNullOrEmpty($msg)) {
-        $msg = ""
+$ids = @(%s)
+try {
+    $events = Get-WinEvent -FilterHashtable @{LogName='%s'; Id=$ids; StartTime=(Get-Date).AddDays(-%d)} -ErrorAction Stop
+    foreach ($e in $events) {
+        $time = $e.TimeCreated.ToString('o')
+        $id = $e.Id
+        $level = $e.LevelDisplayName
+        $provider = $e.ProviderName
+        $msg = $e.Message
+        if ([string]::IsNullOrEmpty($msg)) {
+            $msg = ""
+        }
+        $msg = $msg -replace '[\r\n]+', ' '
+        [Console]::WriteLine("$time|||$id|||$level|||$provider|||$msg")
     }
-    $msg = $msg -replace '[\r\n]+', ' '
-    [Console]::WriteLine("$time|||$id|||$level|||$provider|||$msg")
+} catch {
+    # 如果是"没有找到匹配的事件"错误，这是正常的
+    if ($_.Exception.Message -notmatch "No events were found") {
+        Write-Error $_.Exception.Message
+        exit 1
+    }
 }
-`, channel, daysAgo, eventIDFilter)
+`, eventIDFilter, channel, daysAgo)
 
 	cmd := exec.CommandContext(ctx, "powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", psScript)
-	output, err := cmd.Output()
+	output, err := cmd.CombinedOutput() // 使用 CombinedOutput 获取错误信息
 	if err != nil {
-		return entries, err
+		// 检查是否是权限错误
+		outputStr := string(output)
+		if strings.Contains(outputStr, "Access") || strings.Contains(outputStr, "denied") || strings.Contains(outputStr, "权限") {
+			return entries, fmt.Errorf("access denied to %s log (requires administrator privileges)", channel)
+		}
+		return entries, fmt.Errorf("PowerShell query failed: %v, output: %s", err, outputStr)
 	}
 
 	outputStr := string(output)
@@ -352,9 +490,9 @@ foreach ($e in $events) {
 			continue
 		}
 
-		timestamp := time.Now().UTC()
+		timestamp := time.Now()
 		if t, err := time.Parse(time.RFC3339, strings.TrimSpace(parts[0])); err == nil {
-			timestamp = t.UTC()
+			timestamp = t.Local()
 		}
 
 		eventID := strings.TrimSpace(parts[1])
@@ -384,6 +522,155 @@ foreach ($e in $events) {
 	return entries, nil
 }
 
+// parseWevtutilXMLOutput 解析 wevtutil XML 格式输出
+func (c *SecurityCollector) parseWevtutilXMLOutput(output string, cutoffTime time.Time) []core.LogEntry {
+	var entries []core.LogEntry
+	
+	// RenderedXml 格式每个事件是一个 <Event> 元素
+	// 使用正则表达式提取每个事件
+	eventRegex := regexp.MustCompile(`(?s)<Event[^>]*>.*?</Event>`)
+	events := eventRegex.FindAllString(output, -1)
+	
+	for _, eventXML := range events {
+		entry := c.parseXMLEvent(eventXML, cutoffTime)
+		if entry != nil {
+			entries = append(entries, *entry)
+		}
+	}
+	
+	return entries
+}
+
+// parseXMLEvent 解析单个 XML 格式的事件
+func (c *SecurityCollector) parseXMLEvent(eventXML string, cutoffTime time.Time) *core.LogEntry {
+	// 提取事件ID
+	eventIDRegex := regexp.MustCompile(`<EventID[^>]*>(\d+)</EventID>`)
+	eventIDMatch := eventIDRegex.FindStringSubmatch(eventXML)
+	if len(eventIDMatch) < 2 {
+		return nil
+	}
+	eventID := eventIDMatch[1]
+	
+	// 提取时间戳
+	timeRegex := regexp.MustCompile(`<TimeCreated[^>]*SystemTime=['"]([^'"]+)['"]`)
+	timeMatch := timeRegex.FindStringSubmatch(eventXML)
+	var timestamp time.Time
+	if len(timeMatch) >= 2 {
+		// 尝试解析 ISO 8601 格式
+		if t, err := time.Parse(time.RFC3339Nano, timeMatch[1]); err == nil {
+			timestamp = t.Local()
+		} else if t, err := time.Parse("2006-01-02T15:04:05.000000000Z", timeMatch[1]); err == nil {
+			timestamp = t.Local()
+		} else if t, err := time.Parse("2006-01-02T15:04:05Z", timeMatch[1]); err == nil {
+			timestamp = t.Local()
+		}
+	}
+	
+	if timestamp.IsZero() {
+		timestamp = time.Now()
+	}
+	
+	// 检查时间是否在范围内
+	if !cutoffTime.IsZero() && timestamp.Before(cutoffTime) {
+		return nil
+	}
+	
+	// 提取 Provider
+	providerRegex := regexp.MustCompile(`<Provider[^>]*Name=['"]([^'"]+)['"]`)
+	providerMatch := providerRegex.FindStringSubmatch(eventXML)
+	provider := "Windows Event Log"
+	if len(providerMatch) >= 2 {
+		provider = providerMatch[1]
+	}
+	
+	// 提取 Level
+	levelRegex := regexp.MustCompile(`<Level>(\d+)</Level>`)
+	levelMatch := levelRegex.FindStringSubmatch(eventXML)
+	level := "Info"
+	if len(levelMatch) >= 2 {
+		switch levelMatch[1] {
+		case "1":
+			level = "Critical"
+		case "2":
+			level = "Error"
+		case "3":
+			level = "Warning"
+		case "4":
+			level = "Information"
+		case "5":
+			level = "Verbose"
+		}
+	}
+	
+	// 提取 RenderingInfo 中的 Message（这是完整的事件描述）
+	// RenderedXml 格式会包含 <RenderingInfo> 元素
+	messageRegex := regexp.MustCompile(`(?s)<Message>([^<]*(?:<[^/][^<]*</[^>]+>[^<]*)*)</Message>`)
+	messageMatch := messageRegex.FindStringSubmatch(eventXML)
+	message := ""
+	if len(messageMatch) >= 2 {
+		message = strings.TrimSpace(messageMatch[1])
+		// 清理 HTML 实体
+		message = strings.ReplaceAll(message, "&lt;", "<")
+		message = strings.ReplaceAll(message, "&gt;", ">")
+		message = strings.ReplaceAll(message, "&amp;", "&")
+		message = strings.ReplaceAll(message, "&quot;", "\"")
+		message = strings.ReplaceAll(message, "&#xD;", "\r")
+		message = strings.ReplaceAll(message, "&#xA;", "\n")
+	}
+	
+	// 如果没有 Message，尝试从 EventData 提取
+	if message == "" {
+		eventDataRegex := regexp.MustCompile(`(?s)<EventData>(.*?)</EventData>`)
+		eventDataMatch := eventDataRegex.FindStringSubmatch(eventXML)
+		if len(eventDataMatch) >= 2 {
+			// 提取所有 Data 元素
+			dataRegex := regexp.MustCompile(`<Data[^>]*>([^<]*)</Data>`)
+			dataMatches := dataRegex.FindAllStringSubmatch(eventDataMatch[1], -1)
+			var dataParts []string
+			for _, dm := range dataMatches {
+				if len(dm) >= 2 && strings.TrimSpace(dm[1]) != "" {
+					dataParts = append(dataParts, strings.TrimSpace(dm[1]))
+				}
+			}
+			if len(dataParts) > 0 {
+				message = strings.Join(dataParts, " | ")
+			}
+		}
+	}
+	
+	// 如果还是没有消息，使用事件类型名称
+	if message == "" {
+		message = c.getWindowsEventTypeName(eventID)
+	}
+	
+	// 提取用户
+	user := c.extractUser(message)
+	if user == "" {
+		// 尝试从 Security 元素提取
+		userRegex := regexp.MustCompile(`<Security[^>]*UserID=['"]([^'"]+)['"]`)
+		userMatch := userRegex.FindStringSubmatch(eventXML)
+		if len(userMatch) >= 2 {
+			user = userMatch[1]
+		}
+	}
+	
+	eventType := c.getWindowsEventTypeName(eventID)
+	eventCategory := c.categorizeWindowsEvent(eventID)
+	
+	return &core.LogEntry{
+		Timestamp: timestamp,
+		Source:    provider,
+		Level:     level,
+		EventID:   eventID,
+		Message:   message,
+		Details: map[string]string{
+			"category":   eventCategory,
+			"event_type": eventType,
+			"user":       user,
+		},
+	}
+}
+
 // parseWevtutilTextOutput 解析 wevtutil 文本格式输出
 func (c *SecurityCollector) parseWevtutilTextOutput(output string, cutoffTime time.Time) []core.LogEntry {
 	var entries []core.LogEntry
@@ -405,16 +692,21 @@ func (c *SecurityCollector) parseWevtutilTextOutput(output string, cutoffTime ti
 	//   为新登录分配了特殊权限。
 	//   ...
 	
-	// 按事件分割（空行分隔）
-	events := strings.Split(output, "\r\n\r\n")
-	if len(events) <= 1 {
-		events = strings.Split(output, "\n\n")
-	}
+	// 使用 "Event[" 作为分隔符来分割事件
+	// 首先标准化换行符
+	output = strings.ReplaceAll(output, "\r\n", "\n")
 	
-	for _, event := range events {
-		if strings.TrimSpace(event) == "" {
+	// 按 "Event[" 分割
+	parts := strings.Split(output, "Event[")
+	
+	for _, part := range parts {
+		part = strings.TrimSpace(part)
+		if part == "" {
 			continue
 		}
+		
+		// 重新添加 "Event[" 前缀（因为 Split 会移除它）
+		event := "Event[" + part
 		
 		entry := c.parseWevtutilEvent(event, cutoffTime)
 		if entry != nil {
@@ -434,6 +726,36 @@ func (c *SecurityCollector) parseWevtutilEvent(event string, cutoffTime time.Tim
 	inDescription := false
 	var descBuilder strings.Builder
 	
+	// wevtutil 输出的标准字段名（用于判断是否是新字段）
+	standardFields := map[string]bool{
+		"Event":       true,
+		"Log Name":    true,
+		"Source":      true,
+		"Date":        true,
+		"Event ID":    true,
+		"Task":        true,
+		"Level":       true,
+		"Opcode":      true,
+		"Keyword":     true,
+		"User":        true,
+		"User Name":   true,
+		"Computer":    true,
+		"Description": true,
+		// 中文字段名
+		"日志名称": true,
+		"来源":   true,
+		"日期":   true,
+		"事件 ID": true,
+		"任务类别": true,
+		"级别":   true,
+		"操作代码": true,
+		"关键字":  true,
+		"用户":   true,
+		"用户名":  true,
+		"计算机":  true,
+		"描述":   true,
+	}
+	
 	for _, line := range lines {
 		line = strings.TrimSpace(line)
 		
@@ -449,21 +771,30 @@ func (c *SecurityCollector) parseWevtutilEvent(event string, cutoffTime time.Tim
 		}
 		
 		if inDescription {
-			// 如果遇到新的字段（包含冒号且不是描述内容），停止
-			if strings.Contains(line, ":") && !strings.HasPrefix(line, " ") && !strings.HasPrefix(line, "\t") {
+			// 检查是否是新的标准字段（而不是描述内容中的冒号）
+			isNewField := false
+			if strings.Contains(line, ":") {
 				colonIdx := strings.Index(line, ":")
-				if colonIdx > 0 && colonIdx < 20 {
-					// 可能是新字段，检查字段名是否合理
+				if colonIdx > 0 {
 					fieldName := strings.TrimSpace(line[:colonIdx])
-					if !strings.Contains(fieldName, " ") || len(fieldName) < 15 {
-						break
+					// 只有当字段名是标准字段时才认为是新字段
+					if standardFields[fieldName] {
+						isNewField = true
 					}
 				}
 			}
-			if descBuilder.Len() > 0 {
-				descBuilder.WriteString(" ")
+			
+			if isNewField {
+				break
 			}
-			descBuilder.WriteString(line)
+			
+			// 继续添加描述内容
+			if line != "" {
+				if descBuilder.Len() > 0 {
+					descBuilder.WriteString("\n") // 保留换行，而不是用空格
+				}
+				descBuilder.WriteString(line)
+			}
 			continue
 		}
 		
@@ -497,7 +828,7 @@ func (c *SecurityCollector) parseWevtutilEvent(event string, cutoffTime time.Tim
 				}
 				for _, format := range formats {
 					if t, err := time.ParseInLocation(format, dateStr, time.Local); err == nil {
-						timestamp = t.UTC()
+						timestamp = t
 						break
 					}
 				}
@@ -522,7 +853,7 @@ func (c *SecurityCollector) parseWevtutilEvent(event string, cutoffTime time.Tim
 	
 	// 如果时间戳为空，使用当前时间
 	if timestamp.IsZero() {
-		timestamp = time.Now().UTC()
+		timestamp = time.Now()
 	}
 	
 	// 检查时间是否在范围内
@@ -684,9 +1015,9 @@ func (c *SecurityCollector) parseWindowsEventLogJSON(jsonStr, category string) [
 		eventCategory := c.categorizeWindowsEvent(eventID)
 		
 		// 解析时间戳
-		timestamp := time.Now().UTC()
+		timestamp := time.Now()
 		if t, err := time.Parse(time.RFC3339, event.TimeCreated); err == nil {
-			timestamp = t.UTC()
+			timestamp = t.Local()
 		}
 		
 		// 提取用户（从Message中提取）
@@ -736,7 +1067,7 @@ func (c *SecurityCollector) parseWindowsEventLogJSONFallback(jsonStr, category s
 		}
 		
 		// 提取时间戳
-		timestamp := time.Now().UTC()
+		timestamp := time.Now()
 		if t, err := c.extractTimestamp(line); err == nil {
 			timestamp = t
 		}
@@ -804,7 +1135,7 @@ func (c *SecurityCollector) parseWevtutilOutput(output, category string, cutoffT
 		}
 		
 		// 提取时间戳
-		timestamp := time.Now().UTC()
+		timestamp := time.Now()
 		if t, err := c.extractTimestamp(event); err == nil {
 			timestamp = t
 			if timestamp.Before(cutoffTime) {
@@ -1147,7 +1478,6 @@ func (c *SecurityCollector) extractProcessName(line string) string {
 func (c *SecurityCollector) getLinuxSecurityLogs(ctx context.Context) ([]core.LogEntry, error) {
 	var entries []core.LogEntry
 	cutoffTime := time.Now().Add(-time.Duration(c.days) * 24 * time.Hour)
-	maxEntries := 2000
 
 	// Linux 安全相关的日志文件 - 按日志类型分类
 	logSources := []struct {
@@ -1177,19 +1507,15 @@ func (c *SecurityCollector) getLinuxSecurityLogs(ctx context.Context) ([]core.Lo
 		default:
 		}
 
-		fileEntries, err := c.parseSecurityLogFile(logSource.path, logSource.category, cutoffTime, maxEntries-len(entries))
+		fileEntries, err := c.parseSecurityLogFile(logSource.path, logSource.category, cutoffTime)
 		if err != nil {
 			continue
 		}
 		entries = append(entries, fileEntries...)
-
-		if len(entries) >= maxEntries {
-			break
-		}
 	}
 
 	// 使用 journalctl 获取 systemd 安全日志
-	journalEntries, err := c.getLinuxJournalSecurityLogs(ctx, cutoffTime, maxEntries-len(entries))
+	journalEntries, err := c.getLinuxJournalSecurityLogs(ctx, cutoffTime)
 	if err == nil {
 		entries = append(entries, journalEntries...)
 	}
@@ -1198,7 +1524,7 @@ func (c *SecurityCollector) getLinuxSecurityLogs(ctx context.Context) ([]core.Lo
 }
 
 // parseSecurityLogFile 解析安全日志文件
-func (c *SecurityCollector) parseSecurityLogFile(filePath, category string, cutoffTime time.Time, maxEntries int) ([]core.LogEntry, error) {
+func (c *SecurityCollector) parseSecurityLogFile(filePath, category string, cutoffTime time.Time) ([]core.LogEntry, error) {
 	var entries []core.LogEntry
 
 	file, err := os.Open(filePath)
@@ -1208,14 +1534,14 @@ func (c *SecurityCollector) parseSecurityLogFile(filePath, category string, cuto
 	defer file.Close()
 
 	scanner := bufio.NewScanner(file)
-	for scanner.Scan() && len(entries) < maxEntries {
+	for scanner.Scan() {
 		line := scanner.Text()
 		if strings.TrimSpace(line) == "" {
 			continue
 		}
 
 		// 提取时间戳
-		timestamp := time.Now().UTC()
+		timestamp := time.Now()
 		if t, err := c.extractTimestamp(line); err == nil {
 			timestamp = t
 			if timestamp.Before(cutoffTime) {
@@ -1369,7 +1695,7 @@ func (c *SecurityCollector) generateLinuxEventSummary(line, eventType, user stri
 }
 
 // getLinuxJournalSecurityLogs 使用 journalctl 获取安全相关日志
-func (c *SecurityCollector) getLinuxJournalSecurityLogs(ctx context.Context, cutoffTime time.Time, maxEntries int) ([]core.LogEntry, error) {
+func (c *SecurityCollector) getLinuxJournalSecurityLogs(ctx context.Context, cutoffTime time.Time) ([]core.LogEntry, error) {
 	var entries []core.LogEntry
 
 	// 使用 journalctl 获取安全相关的日志单元
@@ -1397,7 +1723,8 @@ func (c *SecurityCollector) getLinuxJournalSecurityLogs(ctx context.Context, cut
 		default:
 		}
 
-		cmd := exec.CommandContext(ctx, "journalctl", "-u", unitInfo.unit, "--since", sinceTime, "-n", "100", "--no-pager", "-o", "short-iso")
+		// 移除 -n 限制，获取指定时间范围内的所有日志
+		cmd := exec.CommandContext(ctx, "journalctl", "-u", unitInfo.unit, "--since", sinceTime, "--no-pager", "-o", "short-iso")
 		output, err := cmd.Output()
 		if err != nil {
 			continue
@@ -1410,7 +1737,7 @@ func (c *SecurityCollector) getLinuxJournalSecurityLogs(ctx context.Context, cut
 			}
 
 			// 提取时间戳
-			timestamp := time.Now().UTC()
+			timestamp := time.Now()
 			if t, err := c.extractTimestamp(line); err == nil {
 				timestamp = t
 			}
@@ -1442,161 +1769,369 @@ func (c *SecurityCollector) getLinuxJournalSecurityLogs(ctx context.Context, cut
 			}
 
 			entries = append(entries, entry)
-
-			if len(entries) >= maxEntries {
-				return entries, nil
-			}
 		}
 	}
 
 	return entries, nil
 }
 
-// getDarwinSecurityLogs 获取macOS安全日志 - 通过日志子系统过滤
+// getDarwinSecurityLogs 获取macOS安全日志 - 只收集系统解锁登录相关日志
 func (c *SecurityCollector) getDarwinSecurityLogs(ctx context.Context) ([]core.LogEntry, error) {
 	var entries []core.LogEntry
 	cutoffTime := time.Now().Add(-time.Duration(c.days) * 24 * time.Hour)
-	maxEntries := 2000
 
-	// 优先使用 log show 获取统一日志 - 按子系统过滤（更精确）
-	unifiedEntries, err := c.getDarwinUnifiedSecurityLogs(ctx, cutoffTime, maxEntries)
+	// 使用 log show 获取统一日志 - 只获取登录/解锁相关
+	unifiedEntries, err := c.getDarwinUnifiedSecurityLogs(ctx, cutoffTime)
 	if err == nil {
 		entries = append(entries, unifiedEntries...)
 	}
 
-	// 如果统一日志不够，再从文件日志补充
-	if len(entries) < maxEntries {
-		// macOS 安全相关的日志文件
-		logSources := []struct {
-			path     string
-			category string
-		}{
-			{"/var/log/secure.log", "authentication"},
-			{"/var/log/auth.log", "authentication"},
-			{"/var/log/appfirewall.log", "security_mechanism"},
-			{"/var/log/install.log", "system"},
-			{"/var/log/system.log", "system"},
-		}
-
-		for _, logSource := range logSources {
-			select {
-			case <-ctx.Done():
-				return entries, ctx.Err()
-			default:
-			}
-
-			fileEntries, err := c.parseSecurityLogFile(logSource.path, logSource.category, cutoffTime, maxEntries-len(entries))
-			if err != nil {
-				continue
-			}
-			entries = append(entries, fileEntries...)
-
-			if len(entries) >= maxEntries {
-				break
-			}
-		}
+	// 补充 SSH 登录日志（从文件）
+	sshEntries, err := c.getDarwinSSHLogs(ctx, cutoffTime)
+	if err == nil {
+		entries = append(entries, sshEntries...)
 	}
 
 	return entries, nil
 }
 
-// getDarwinUnifiedSecurityLogs 获取macOS统一日志 - 按安全相关子系统过滤
-func (c *SecurityCollector) getDarwinUnifiedSecurityLogs(ctx context.Context, cutoffTime time.Time, maxEntries int) ([]core.LogEntry, error) {
+// getDarwinUnifiedSecurityLogs 获取macOS统一日志 - 只获取GUI登录/解锁相关日志
+func (c *SecurityCollector) getDarwinUnifiedSecurityLogs(ctx context.Context, cutoffTime time.Time) ([]core.LogEntry, error) {
 	var entries []core.LogEntry
 
-	// macOS 安全相关的子系统 - 精简列表，只保留最重要的
-	securitySubsystems := []struct {
-		subsystem string
-		category  string
-		eventType string
-	}{
-		// 认证与登录（最重要）
-		{"com.apple.securityd", "authentication", "安全守护进程"},
-		{"com.apple.Authorization", "authentication", "授权服务"},
-		{"com.apple.loginwindow", "authentication", "登录窗口"},
-		// 权限与账户
-		{"com.apple.TCC", "account_change", "隐私权限"},
-		// 安全机制触发
-		{"com.apple.sandboxd", "security_mechanism", "沙盒"},
-		{"com.apple.alf", "security_mechanism", "应用防火墙"},
-	}
+	// 使用天数参数，转换为分钟
+	minutes := c.days * 24 * 60
+	lastTime := fmt.Sprintf("%dm", minutes)
 
-	// 使用小时数，最多24小时
-	hours := c.days * 24
-	if hours > 24 {
-		hours = 24
-	}
-	lastTime := fmt.Sprintf("%dh", hours)
+	// 查询 loginwindow 进程的登录/解锁相关日志
+	queryCtx, cancel := context.WithTimeout(ctx, 2*time.Minute)
+	defer cancel()
 
-	for _, subsystemInfo := range securitySubsystems {
-		select {
-		case <-ctx.Done():
-			return entries, ctx.Err()
-		default:
-		}
-
-		// 为每个子系统查询创建子上下文，限制单个查询时间
-		queryCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
-		
-		// 使用 log show 命令按子系统过滤
-		predicate := fmt.Sprintf("subsystem == '%s'", subsystemInfo.subsystem)
-		cmd := exec.CommandContext(queryCtx, "log", "show", "--predicate", predicate, "--last", lastTime, "--style", "syslog")
-		
-		output, err := cmd.Output()
-		cancel() // 释放上下文
-		
-		if err != nil {
-			continue
-		}
-
+	// 使用 process 过滤 loginwindow，只获取关键的登录/解锁事件
+	// 精确匹配关键事件：屏幕锁定开始、解锁、Shield窗口状态、会话状态变更
+	predicate := `process == "loginwindow" AND (eventMessage CONTAINS "startScreenLock" OR eventMessage CONTAINS "LWScreenLock" OR eventMessage CONTAINS "unlock" OR eventMessage CONTAINS "Unlock" OR eventMessage CONTAINS "Shield window" OR eventMessage CONTAINS "ShieldWindow" OR eventMessage CONTAINS "sessionState" OR eventMessage CONTAINS "Session state" OR eventMessage CONTAINS "loginIsComplete" OR eventMessage CONTAINS "DisplayDidWake" OR eventMessage CONTAINS "DisplayWillSleep")`
+	
+	cmd := exec.CommandContext(queryCtx, "log", "show", "--predicate", predicate, "--last", lastTime, "--style", "syslog")
+	output, err := cmd.Output()
+	
+	// 用于去重：同一秒内同一事件类型只保留一条
+	seenEvents := make(map[string]bool)
+	
+	if err == nil {
 		lines := strings.Split(string(output), "\n")
-		count := 0
 		for _, line := range lines {
 			if strings.TrimSpace(line) == "" || strings.HasPrefix(line, "Timestamp") {
 				continue
 			}
 
+			// 过滤掉不相关的日志
+			lineLower := strings.ToLower(line)
+			// 跳过应用程序相关的日志
+			if strings.Contains(lineLower, "checked in app") ||
+			   strings.Contains(lineLower, "applicationquit") ||
+			   strings.Contains(lineLower, "applicationlaunched") ||
+			   strings.Contains(lineLower, "persistentappssupport") ||
+			   strings.Contains(lineLower, "applicationmanager") {
+				continue
+			}
+			// 跳过一些不重要的内部日志
+			if strings.Contains(lineLower, "preheat") ||
+			   strings.Contains(lineLower, "placeholder") ||
+			   strings.Contains(lineLower, "avatar") ||
+			   strings.Contains(lineLower, "clock") ||
+			   strings.Contains(lineLower, "progress") ||
+			   strings.Contains(lineLower, "textfield") ||
+			   strings.Contains(lineLower, "button") {
+				continue
+			}
+
 			// 提取时间戳
-			timestamp := time.Now().UTC()
+			timestamp := time.Now()
 			if t, err := c.extractTimestamp(line); err == nil {
 				timestamp = t
 			}
 			
+			// 生成事件类型
+			eventType := c.categorizeDarwinLoginEvent(line)
+			
+			// 跳过空事件类型（不重要的内部事件）
+			if eventType == "" {
+				continue
+			}
+			
+			// 去重：同一秒内同一事件类型只保留一条
+			// 时间戳精确到秒 + 事件类型作为去重键
+			dedupeKey := timestamp.Format("2006-01-02T15:04:05") + "|" + eventType
+			if seenEvents[dedupeKey] {
+				continue
+			}
+			seenEvents[dedupeKey] = true
+			
 			// 提取用户
 			user := c.extractUser(line)
+			// 尝试从日志中提取用户名
+			if user == "" {
+				userRegex := regexp.MustCompile(`(?:user|shortName)\s*[=:]\s*([a-zA-Z0-9_\-]+)`)
+				if matches := userRegex.FindStringSubmatch(line); len(matches) > 1 {
+					user = matches[1]
+				}
+			}
 			
-			// 生成事件摘要
-			eventSummary := c.generateDarwinEventSummary(line, subsystemInfo.eventType, user)
+			eventSummary := c.generateDarwinLoginEventSummary(line, eventType, user)
 
 			entry := core.LogEntry{
 				Timestamp: timestamp,
-				Source:    subsystemInfo.subsystem,
+				Source:    "loginwindow",
 				Level:     c.extractLogLevel(line),
 				EventID:   c.extractEventID(line),
 				Message:   eventSummary,
 				Details: map[string]string{
-					"category":   subsystemInfo.category,
-					"event_type": subsystemInfo.eventType,
+					"category":   "authentication",
+					"event_type": eventType,
 					"user":       user,
-					"subsystem":  subsystemInfo.subsystem,
+					"process":    "loginwindow",
 					"source":     "unified_log",
 				},
 			}
 
 			entries = append(entries, entry)
-			count++
-
-			if count >= 200 || len(entries) >= maxEntries {
-				break
-			}
-		}
-
-		if len(entries) >= maxEntries {
-			break
 		}
 	}
 
 	return entries, nil
+}
+
+// getDarwinSSHLogs 获取macOS SSH登录日志
+func (c *SecurityCollector) getDarwinSSHLogs(ctx context.Context, cutoffTime time.Time) ([]core.LogEntry, error) {
+	var entries []core.LogEntry
+
+	// 使用天数参数
+	minutes := c.days * 24 * 60
+	lastTime := fmt.Sprintf("%dm", minutes)
+
+	// 查询 SSH 登录相关日志
+	queryCtx, cancel := context.WithTimeout(ctx, 2*time.Minute)
+	defer cancel()
+
+	// sshd 进程的日志
+	predicate := `process == "sshd" AND (eventMessage CONTAINS "Accepted" OR eventMessage CONTAINS "Failed" OR eventMessage CONTAINS "session opened" OR eventMessage CONTAINS "session closed" OR eventMessage CONTAINS "Connection from" OR eventMessage CONTAINS "Disconnected")`
+	
+	cmd := exec.CommandContext(queryCtx, "log", "show", "--predicate", predicate, "--last", lastTime, "--style", "syslog")
+	output, err := cmd.Output()
+	
+	if err == nil {
+		lines := strings.Split(string(output), "\n")
+		for _, line := range lines {
+			if strings.TrimSpace(line) == "" || strings.HasPrefix(line, "Timestamp") {
+				continue
+			}
+
+			timestamp := time.Now()
+			if t, err := c.extractTimestamp(line); err == nil {
+				timestamp = t
+			}
+			
+			user := c.extractUser(line)
+			ip := c.extractIPAddress(line)
+			eventType := c.categorizeSSHEvent(line)
+			eventSummary := c.generateSSHEventSummary(line, eventType, user, ip)
+
+			entry := core.LogEntry{
+				Timestamp: timestamp,
+				Source:    "sshd",
+				Level:     c.extractLogLevel(line),
+				EventID:   c.extractEventID(line),
+				Message:   eventSummary,
+				Details: map[string]string{
+					"category":   "authentication",
+					"event_type": eventType,
+					"user":       user,
+					"ip_address": ip,
+					"source":     "unified_log",
+				},
+			}
+
+			entries = append(entries, entry)
+		}
+	}
+
+	// 补充从 /var/log/secure.log 读取 SSH 日志
+	sshFileEntries, err := c.parseSSHLogFile("/var/log/secure.log", cutoffTime)
+	if err == nil {
+		entries = append(entries, sshFileEntries...)
+	}
+
+	return entries, nil
+}
+
+// parseSSHLogFile 解析 SSH 日志文件
+func (c *SecurityCollector) parseSSHLogFile(filePath string, cutoffTime time.Time) ([]core.LogEntry, error) {
+	var entries []core.LogEntry
+
+	file, err := os.Open(filePath)
+	if err != nil {
+		return entries, err
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		line := scanner.Text()
+		if strings.TrimSpace(line) == "" {
+			continue
+		}
+
+		// 只处理 sshd 相关的日志
+		if !strings.Contains(line, "sshd") {
+			continue
+		}
+
+		// 只处理登录相关的日志
+		lineLower := strings.ToLower(line)
+		if !strings.Contains(lineLower, "accepted") && 
+		   !strings.Contains(lineLower, "failed") &&
+		   !strings.Contains(lineLower, "session opened") &&
+		   !strings.Contains(lineLower, "session closed") {
+			continue
+		}
+
+		timestamp := time.Now()
+		if t, err := c.extractTimestamp(line); err == nil {
+			timestamp = t
+			if timestamp.Before(cutoffTime) {
+				continue
+			}
+		}
+
+		user := c.extractUser(line)
+		ip := c.extractIPAddress(line)
+		eventType := c.categorizeSSHEvent(line)
+		eventSummary := c.generateSSHEventSummary(line, eventType, user, ip)
+
+		entry := core.LogEntry{
+			Timestamp: timestamp,
+			Source:    "sshd",
+			Level:     c.extractLogLevel(line),
+			EventID:   c.extractEventID(line),
+			Message:   eventSummary,
+			Details: map[string]string{
+				"category":   "authentication",
+				"event_type": eventType,
+				"user":       user,
+				"ip_address": ip,
+				"file":       filePath,
+			},
+		}
+
+		entries = append(entries, entry)
+	}
+
+	return entries, scanner.Err()
+}
+
+// categorizeDarwinLoginEvent 分类 macOS 登录事件
+func (c *SecurityCollector) categorizeDarwinLoginEvent(line string) string {
+	lineLower := strings.ToLower(line)
+	
+	// 屏幕锁定相关 - 只匹配明确的锁定开始事件
+	if strings.Contains(lineLower, "startscreenlock") {
+		return "屏幕锁定"
+	}
+	
+	// 屏幕解锁相关 - 只匹配明确的解锁事件
+	if strings.Contains(lineLower, "unlock") {
+		// 排除一些不相关的 unlock 日志
+		if strings.Contains(lineLower, "shield") {
+			return "" // Shield unlock 是内部状态，跳过
+		}
+		return "屏幕解锁"
+	}
+	
+	// 登录完成
+	if strings.Contains(lineLower, "logincomplete") || strings.Contains(lineLower, "loginiscomplete") {
+		return "登录完成"
+	}
+	
+	// 会话状态变更 - 只保留重要的状态变更
+	if strings.Contains(lineLower, "sessionstate") || strings.Contains(lineLower, "session state") {
+		// 检查是否是重要的状态变更
+		if strings.Contains(lineLower, "active") || strings.Contains(lineLower, "inactive") ||
+		   strings.Contains(lineLower, "locked") || strings.Contains(lineLower, "unlocked") {
+			return "会话状态变更"
+		}
+		return "" // 其他会话状态变更跳过
+	}
+	
+	// 显示唤醒 - 可能表示用户回来了
+	if strings.Contains(lineLower, "displaydidwake") {
+		return "显示器唤醒"
+	}
+	
+	// 显示休眠 - 可能表示用户离开了
+	if strings.Contains(lineLower, "displaywillsleep") {
+		return "显示器休眠"
+	}
+	
+	// Shield window 和 LWScreenLock 是内部状态，跳过
+	if strings.Contains(lineLower, "shield") || strings.Contains(lineLower, "lwscreenlock") {
+		return ""
+	}
+	
+	return "" // 其他事件跳过
+}
+
+// generateDarwinLoginEventSummary 生成 macOS 登录事件摘要
+func (c *SecurityCollector) generateDarwinLoginEventSummary(line, eventType, user string) string {
+	if user != "" {
+		return fmt.Sprintf("%s: 用户 %s", eventType, user)
+	}
+	return eventType
+}
+
+// categorizeSSHEvent 分类 SSH 事件
+func (c *SecurityCollector) categorizeSSHEvent(line string) string {
+	lineLower := strings.ToLower(line)
+	
+	if strings.Contains(lineLower, "accepted") {
+		if strings.Contains(lineLower, "publickey") {
+			return "SSH密钥登录成功"
+		}
+		if strings.Contains(lineLower, "password") {
+			return "SSH密码登录成功"
+		}
+		return "SSH登录成功"
+	}
+	if strings.Contains(lineLower, "failed") {
+		return "SSH登录失败"
+	}
+	if strings.Contains(lineLower, "session opened") {
+		return "SSH会话开始"
+	}
+	if strings.Contains(lineLower, "session closed") {
+		return "SSH会话结束"
+	}
+	if strings.Contains(lineLower, "disconnected") {
+		return "SSH断开连接"
+	}
+	if strings.Contains(lineLower, "connection from") {
+		return "SSH连接请求"
+	}
+	
+	return "SSH活动"
+}
+
+// generateSSHEventSummary 生成 SSH 事件摘要
+func (c *SecurityCollector) generateSSHEventSummary(line, eventType, user, ip string) string {
+	if user != "" && ip != "" {
+		return fmt.Sprintf("%s: 用户 %s 从 %s", eventType, user, ip)
+	}
+	if user != "" {
+		return fmt.Sprintf("%s: 用户 %s", eventType, user)
+	}
+	if ip != "" {
+		return fmt.Sprintf("%s: 来自 %s", eventType, ip)
+	}
+	return eventType
 }
 
 // generateDarwinEventSummary 生成macOS事件摘要
@@ -1673,29 +2208,30 @@ func (c *SecurityCollector) generateDarwinEventSummary(line, eventType, user str
 
 // extractTimestamp 从日志行中提取时间戳
 func (c *SecurityCollector) extractTimestamp(line string) (time.Time, error) {
-	// RFC3339格式
+	// RFC3339格式 (带时区信息)
 	rfc3339Regex := regexp.MustCompile(`\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})`)
 	if match := rfc3339Regex.FindString(line); match != "" {
 		if t, err := time.Parse(time.RFC3339, match); err == nil {
-			return t.UTC(), nil
+			// 转换为本地时间显示
+			return t.Local(), nil
 		}
 	}
 	
-	// ISO格式 (2024-01-15 10:30:45)
+	// ISO格式 (2024-01-15 10:30:45) - 假设是本地时间
 	isoRegex := regexp.MustCompile(`(\d{4}-\d{2}-\d{2})\s+(\d{2}:\d{2}:\d{2})`)
 	if matches := isoRegex.FindStringSubmatch(line); len(matches) == 3 {
-		timeStr := matches[1] + "T" + matches[2] + "Z"
-		if t, err := time.Parse(time.RFC3339, timeStr); err == nil {
-			return t.UTC(), nil
+		timeStr := matches[1] + " " + matches[2]
+		if t, err := time.ParseInLocation("2006-01-02 15:04:05", timeStr, time.Local); err == nil {
+			return t, nil
 		}
 	}
 	
-	// Syslog格式 (MMM dd HH:mm:ss)
+	// Syslog格式 (MMM dd HH:mm:ss) - 假设是本地时间
 	syslogRegex := regexp.MustCompile(`([A-Z][a-z]{2})\s+(\d{1,2})\s+(\d{2}:\d{2}:\d{2})`)
 	if matches := syslogRegex.FindStringSubmatch(line); len(matches) == 4 {
 		timeStr := fmt.Sprintf("%d %s %s %s", time.Now().Year(), matches[1], matches[2], matches[3])
-		if t, err := time.Parse("2006 Jan 2 15:04:05", timeStr); err == nil {
-			return t.UTC(), nil
+		if t, err := time.ParseInLocation("2006 Jan 2 15:04:05", timeStr, time.Local); err == nil {
+			return t, nil
 		}
 	}
 	
@@ -1799,7 +2335,7 @@ func (c *SecurityCollector) parseLinuxLogLine(line, source string) (core.LogEntr
 	}
 
 	// 尝试解析时间戳
-	entry.Timestamp = time.Now().UTC()
+	entry.Timestamp = time.Now()
 	if timestamp, err := c.extractTimestamp(line); err == nil {
 		entry.Timestamp = timestamp
 	}

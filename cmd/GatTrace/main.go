@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"runtime"
 	"time"
 
 	"GatTrace/internal/collectors"
@@ -14,7 +15,7 @@ import (
 	"GatTrace/internal/platform"
 )
 
-const Version = "v1.0.0"
+const Version = "v1.1.0"
 
 // Config 应用程序配置
 type Config struct {
@@ -41,6 +42,9 @@ func main() {
 		printUsage()
 		os.Exit(0)
 	}
+
+	// 检查管理员权限
+	checkAdminPrivileges()
 
 	// 设置日志级别
 	if config.Verbose {
@@ -79,6 +83,50 @@ func main() {
 	}
 
 	fmt.Printf("✅ GatTrace 采集完成，结果保存在: %s\n", outputDir)
+}
+
+// checkAdminPrivileges 检查管理员权限并给出提示
+func checkAdminPrivileges() {
+	isAdmin := false
+	
+	switch runtime.GOOS {
+	case "windows":
+		isAdmin = isWindowsAdmin()
+	case "linux", "darwin":
+		isAdmin = os.Geteuid() == 0
+	}
+	
+	if !isAdmin {
+		fmt.Println("⚠️  警告: 程序未以管理员权限运行")
+		fmt.Println("   部分功能可能受限:")
+		switch runtime.GOOS {
+		case "windows":
+			fmt.Println("   - Security 日志（登录/注销事件）无法访问")
+			fmt.Println("   - 某些系统进程信息可能不完整")
+			fmt.Println("   - 部分文件系统信息可能无法获取")
+			fmt.Println()
+			fmt.Println("   建议: 右键点击程序，选择\"以管理员身份运行\"")
+		case "linux", "darwin":
+			fmt.Println("   - 安全日志可能无法完整访问")
+			fmt.Println("   - 某些系统进程信息可能不完整")
+			fmt.Println("   - 部分文件系统信息可能无法获取")
+			fmt.Println()
+			fmt.Println("   建议: 使用 sudo 运行程序")
+		}
+		fmt.Println()
+	}
+}
+
+// isWindowsAdmin 检查 Windows 上是否具有管理员权限
+func isWindowsAdmin() bool {
+	// 尝试打开一个需要管理员权限的文件
+	// 这是一个简单但有效的检测方法
+	f, err := os.Open("\\\\.\\PHYSICALDRIVE0")
+	if err != nil {
+		return false
+	}
+	f.Close()
+	return true
 }
 
 // registerCollectors 注册所有采集器

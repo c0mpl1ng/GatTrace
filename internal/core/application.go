@@ -240,8 +240,20 @@ func (a *App) runCollectionProcess(ctx context.Context, outputDir string, verbos
 				log.Printf("[%d/%d] 开始采集: %s", idx+1, len(runnableCollectors), c.Name())
 			}
 			
+			// 根据采集器类型设置不同的超时时间
+			// 安全日志和文件系统采集需要更长的时间
+			var timeout time.Duration
+			switch c.Name() {
+			case "security":
+				timeout = 5 * time.Minute // 安全日志可能需要更长时间
+			case "filesystem":
+				timeout = 3 * time.Minute // 文件系统扫描也需要较长时间
+			default:
+				timeout = 30 * time.Second // 其他采集器使用默认超时
+			}
+			
 			// 为每个采集器创建子上下文
-			collectorCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
+			collectorCtx, cancel := context.WithTimeout(ctx, timeout)
 			defer cancel()
 			
 			// 执行采集
@@ -641,7 +653,8 @@ class GatTraceReport {
             html += '<div class="filter-bar"><input type="text" id="proc-filter" placeholder="搜索进程..." onkeyup="report.filterTable(\'proc-table\', this.value)"></div>';
             html += '<div class="table-wrapper"><table class="data-table sortable" id="proc-table"><thead><tr><th data-sort="number">PID ⇅</th><th data-sort="number">PPID ⇅</th><th data-sort="string">名称 ⇅</th><th data-sort="string">用户 ⇅</th><th data-sort="string">可执行文件 ⇅</th><th data-sort="date">创建时间 ⇅</th><th data-sort="string">状态 ⇅</th></tr></thead><tbody>';
             proc.processes.forEach(p => {
-                html += '<tr id="pid-' + p.pid + '"><td>' + p.pid + '</td><td>' + p.ppid + '</td><td>' + (p.name || '-') + '</td><td>' + (p.username || '-') + '</td><td class="path">' + (p.exe || '-') + '</td><td data-value="' + (p.create_time || '') + '">' + this.formatTime(p.create_time) + '</td><td>' + (p.status || '-') + '</td></tr>';
+                const cmdline = (p.cmdline && p.cmdline.length > 0) ? p.cmdline[0] : (p.exe || '-');
+                html += '<tr id="pid-' + p.pid + '"><td>' + p.pid + '</td><td>' + p.ppid + '</td><td>' + (p.name || '-') + '</td><td>' + (p.username || '-') + '</td><td class="path">' + cmdline + '</td><td data-value="' + (p.create_time || '') + '">' + this.formatTime(p.create_time) + '</td><td>' + (p.status || '-') + '</td></tr>';
             });
             html += '</tbody></table></div>';
         }
@@ -698,9 +711,10 @@ class GatTraceReport {
         let html = '<h2>最近文件</h2>';
         
         if (fs.recent_files?.length) {
-            html += '<div class="table-wrapper"><table class="data-table sortable"><thead><tr><th data-sort="string">路径 ⇅</th><th data-sort="number">大小 ⇅</th><th data-sort="date">修改时间 ⇅</th><th data-sort="string">所有者 ⇅</th><th data-sort="string">权限 ⇅</th></tr></thead><tbody>';
+            html += '<div class="filter-bar"><input type="text" id="fs-filter" placeholder="搜索文件..." onkeyup="report.filterTable(\'fs-table\', this.value)"></div>';
+            html += '<div class="table-wrapper"><table class="data-table sortable" id="fs-table"><thead><tr><th data-sort="string">路径 ⇅</th><th data-sort="number">大小 ⇅</th><th data-sort="date">修改时间 ⇅</th><th data-sort="date">访问时间 ⇅</th><th data-sort="string">权限 ⇅</th></tr></thead><tbody>';
             fs.recent_files.forEach(f => {
-                html += '<tr><td class="path">' + f.path + '</td><td data-value="' + (f.size || 0) + '">' + this.formatSize(f.size) + '</td><td data-value="' + (f.mod_time || '') + '">' + this.formatTime(f.mod_time) + '</td><td>' + (f.owner || '-') + '</td><td>' + (f.mode || '-') + '</td></tr>';
+                html += '<tr><td class="path">' + f.path + '</td><td data-value="' + (f.size || 0) + '">' + this.formatSize(f.size) + '</td><td data-value="' + (f.mod_time || '') + '">' + this.formatTime(f.mod_time) + '</td><td data-value="' + (f.access_time || '') + '">' + this.formatTime(f.access_time) + '</td><td>' + (f.mode || '-') + '</td></tr>';
             });
             html += '</tbody></table></div>';
         } else {

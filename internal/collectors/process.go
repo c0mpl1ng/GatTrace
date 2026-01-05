@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"os/exec"
+	"strings"
 	"time"
 
 	"github.com/shirou/gopsutil/v3/process"
@@ -147,11 +149,6 @@ func (c *ProcessCollector) getProcessInfo(proc *process.Process) (core.Process, 
 		processInfo.PPID = ppid
 	}
 
-	// 获取命令行参数
-	if cmdline, err := proc.Cmdline(); err == nil {
-		processInfo.Cmdline = []string{cmdline}
-	}
-
 	// 获取可执行文件路径
 	if exe, err := proc.Exe(); err == nil {
 		processInfo.Exe = exe
@@ -160,6 +157,14 @@ func (c *ProcessCollector) getProcessInfo(proc *process.Process) (core.Process, 
 		if hash, err := c.calculateFileHash(exe); err == nil {
 			processInfo.ExeHash = hash
 		}
+	}
+
+	// 获取完整命令行
+	cmdline := c.getFullCmdline(proc)
+	if cmdline != "" {
+		processInfo.Cmdline = []string{cmdline}
+	} else if processInfo.Exe != "" {
+		processInfo.Cmdline = []string{processInfo.Exe}
 	}
 
 	// 获取工作目录
@@ -174,7 +179,7 @@ func (c *ProcessCollector) getProcessInfo(proc *process.Process) (core.Process, 
 
 	// 获取创建时间
 	if createTime, err := proc.CreateTime(); err == nil {
-		processInfo.CreateTime = time.Unix(createTime/1000, 0).UTC()
+		processInfo.CreateTime = time.Unix(createTime/1000, 0)
 	}
 
 	// 获取进程状态
@@ -185,6 +190,46 @@ func (c *ProcessCollector) getProcessInfo(proc *process.Process) (core.Process, 
 	}
 
 	return processInfo, nil
+}
+
+// getFullCmdline 获取进程的完整命令行
+func (c *ProcessCollector) getFullCmdline(proc *process.Process) string {
+	// 使用 gopsutil 的 Cmdline 获取完整命令行
+	if cmdline, err := proc.Cmdline(); err == nil && cmdline != "" {
+		return cmdline
+	}
+	
+	// 如果 gopsutil 失败，尝试使用 ps 命令
+	return c.getCmdlineFromPS(proc.Pid)
+}
+
+// getCmdlineFromPS 使用 ps 命令获取完整命令行
+func (c *ProcessCollector) getCmdlineFromPS(pid int32) string {
+	// 使用 ps -ww 获取完整命令行（-ww 表示不截断）
+	cmd := exec.Command("ps", "-p", fmt.Sprintf("%d", pid), "-ww", "-o", "args=")
+	output, err := cmd.Output()
+	if err != nil {
+		return ""
+	}
+	
+	cmdline := strings.TrimSpace(string(output))
+	return cmdline
+}
+
+// isAbsolutePath 判断路径是否为绝对路径
+func isAbsolutePath(path string) bool {
+	if len(path) == 0 {
+		return false
+	}
+	// Unix 绝对路径以 / 开头
+	if path[0] == '/' {
+		return true
+	}
+	// Windows 绝对路径以盘符开头（如 C:\）
+	if len(path) >= 3 && path[1] == ':' && (path[2] == '\\' || path[2] == '/') {
+		return true
+	}
+	return false
 }
 
 // calculateFileHash 计算文件的SHA256哈希

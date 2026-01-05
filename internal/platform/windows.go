@@ -433,8 +433,9 @@ func (w *WindowsAdapter) getAllProcesses() ([]core.Process, error) {
 			processInfo.PPID = ppid
 		}
 
-		if cmdline, err := proc.Cmdline(); err == nil {
-			processInfo.Cmdline = strings.Fields(cmdline)
+		// 获取完整命令行（保持原始格式，不分割）
+		if cmdline, err := proc.Cmdline(); err == nil && cmdline != "" {
+			processInfo.Cmdline = []string{cmdline}
 		}
 
 		if exe, err := proc.Exe(); err == nil {
