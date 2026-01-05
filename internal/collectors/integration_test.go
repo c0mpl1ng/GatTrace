@@ -10,6 +10,10 @@ import (
 
 // TestAllCollectorsIntegration 集成测试：验证所有采集器正常工作
 func TestAllCollectorsIntegration(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping all collectors integration test in short mode")
+	}
+
 	adapter := NewMockPlatformAdapter()
 	
 	// 创建所有采集器
@@ -69,6 +73,10 @@ func validateCollectorMetadata(t *testing.T, collectorName string, data interfac
 
 // TestCollectorErrorHandling 测试采集器错误处理
 func TestCollectorErrorHandling(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping collector error handling test in short mode")
+	}
+
 	adapter := NewMockPlatformAdapter()
 	adapter.SetShouldError(true) // 强制适配器返回错误
 
@@ -200,6 +208,10 @@ func TestCollectorPrivilegeRequirements(t *testing.T) {
 
 // TestCollectorContextHandling 测试采集器上下文处理
 func TestCollectorContextHandling(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping collector context handling test in short mode")
+	}
+
 	adapter := NewMockPlatformAdapter()
 
 	collectors := []core.Collector{
@@ -257,6 +269,10 @@ func TestCollectorContextHandling(t *testing.T) {
 
 // TestCollectorDataConsistency 测试采集器数据一致性
 func TestCollectorDataConsistency(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping collector data consistency test in short mode")
+	}
+
 	adapter := NewMockPlatformAdapter()
 
 	collectors := []core.Collector{

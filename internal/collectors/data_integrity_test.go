@@ -16,6 +16,10 @@ import (
 // 对于任何支持的平台，采集的网络、进程、用户、持久化、文件系统、日志和系统信息应包含所有必需字段且与系统实际状态一致
 // **验证: 需求 2.1-2.5, 3.1-3.5, 4.1-4.5, 5.1-5.5, 6.1-6.5, 7.1-7.5, 8.1-8.5**
 func TestDataCollectionIntegrity(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping data collection integrity test in short mode")
+	}
+
 	config := &quick.Config{
 		MaxCount: 10, // 减少到10次迭代以提高速度
 	}
@@ -550,6 +554,10 @@ func isValidTimestamp(timestamp time.Time) bool {
 
 // TestDataCollectionConsistency 测试数据采集一致性
 func TestDataCollectionConsistency(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping data collection consistency test in short mode")
+	}
+
 	adapter := NewMockPlatformAdapter()
 
 	// 多次运行同一个采集器，验证数据一致性
@@ -615,6 +623,10 @@ func compareDataStructures(data1, data2 interface{}) bool {
 
 // TestCollectorErrorRecovery 测试采集器错误恢复
 func TestCollectorErrorRecovery(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping collector error recovery test in short mode")
+	}
+
 	adapter := NewMockPlatformAdapter()
 	adapter.SetShouldError(true)
 
@@ -655,6 +667,10 @@ func TestCollectorErrorRecovery(t *testing.T) {
 
 // TestMetadataConsistency 测试元数据一致性
 func TestMetadataConsistency(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping metadata consistency test in short mode")
+	}
+
 	adapter := NewMockPlatformAdapter()
 
 	collectors := []core.Collector{

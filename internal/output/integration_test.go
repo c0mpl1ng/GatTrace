@@ -10,6 +10,13 @@ import (
 
 // TestOutputSystemIntegration 测试输出系统的完整集成
 func TestOutputSystemIntegration(t *testing.T) {
+	// 创建临时目录
+	tempDir, err := os.MkdirTemp("", "GatTrace-integration-test-*")
+	if err != nil {
+		t.Fatalf("Failed to create temp dir: %v", err)
+	}
+	defer os.RemoveAll(tempDir)
+
 	// 创建会话管理器
 	sessionManager, err := core.NewSessionManager("v1.0.0")
 	if err != nil {
@@ -17,10 +24,13 @@ func TestOutputSystemIntegration(t *testing.T) {
 	}
 
 	// 创建输出管理器
-	outputManager, err := NewManager(sessionManager)
+	outputManager, err := NewManager(tempDir)
 	if err != nil {
 		t.Fatalf("Failed to create output manager: %v", err)
 	}
+
+	// 设置会话管理器
+	outputManager.SetSessionManager(sessionManager)
 
 	// 确保输出目录存在
 	err = outputManager.EnsureOutputDir()

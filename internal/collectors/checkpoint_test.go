@@ -4,10 +4,16 @@ import (
 	"context"
 	"testing"
 	"time"
+
+	"GatTrace/internal/core"
 )
 
 // TestCheckpointVerification 运行检查点验证测试
 func TestCheckpointVerification(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping checkpoint verification in short mode")
+	}
+
 	adapter := NewMockPlatformAdapter()
 	verifier := NewCheckpointVerification(adapter)
 
@@ -58,6 +64,10 @@ func TestCheckpointVerification(t *testing.T) {
 
 // TestCheckpointVerificationWithErrors 测试错误情况下的检查点验证
 func TestCheckpointVerificationWithErrors(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping checkpoint verification with errors in short mode")
+	}
+
 	adapter := NewMockPlatformAdapter()
 	adapter.SetShouldError(true) // 强制适配器返回错误
 	
@@ -92,49 +102,53 @@ func TestCheckpointVerificationWithErrors(t *testing.T) {
 
 // TestIndividualCollectorVerification 测试单个采集器验证
 func TestIndividualCollectorVerification(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping individual collector verification in short mode")
+	}
+
 	adapter := NewMockPlatformAdapter()
-	_ = NewCheckpointVerification(adapter) // 创建验证器以确保可以正常实例化
 
 	collectors := []struct {
 		name      string
-		collector func() interface{}
+		collector core.Collector
 	}{
-		{"network", func() interface{} { return NewNetworkCollector(adapter) }},
-		{"process", func() interface{} { return NewProcessCollector(adapter) }},
-		{"user", func() interface{} { return NewUserCollector(adapter) }},
-		{"persistence", func() interface{} { return NewPersistenceCollector(adapter) }},
-		{"filesystem", func() interface{} { return NewFileSystemCollector(adapter) }},
-		{"security", func() interface{} { return NewSecurityCollector(adapter) }},
-		{"system", func() interface{} { return NewSystemCollector(adapter) }},
+		{"network", NewNetworkCollector(adapter)},
+		{"process", NewProcessCollector(adapter)},
+		{"user", NewUserCollector(adapter)},
+		{"persistence", NewPersistenceCollector(adapter)},
+		{"filesystem", NewFileSystemCollector(adapter)},
+		{"security", NewSecurityCollector(adapter)},
+		{"system", NewSystemCollector(adapter)},
 	}
 
-	_ = context.Background() // 保留上下文以备将来使用
+	ctx := context.Background()
 
 	for _, tc := range collectors {
 		t.Run(tc.name, func(t *testing.T) {
-			collector := tc.collector().(interface{})
-			
-			// 验证类型断言
-			coreCollector, ok := collector.(interface {
-				Name() string
-				RequiresPrivileges() bool
-				SupportedPlatforms() []interface{}
-				Collect(context.Context) (interface{}, error)
-			})
-			
-			if !ok {
-				t.Errorf("Collector %s does not implement expected interface", tc.name)
+			// 验证名称
+			if tc.collector.Name() != tc.name {
+				t.Errorf("Expected name %s, got %s", tc.name, tc.collector.Name())
+			}
+
+			// 验证支持的平台
+			platforms := tc.collector.SupportedPlatforms()
+			if len(platforms) == 0 {
+				t.Errorf("Collector %s should support at least one platform", tc.name)
+			}
+
+			// 尝试采集数据
+			result, err := tc.collector.Collect(ctx)
+			if err != nil {
+				t.Errorf("Collector %s failed to collect: %v", tc.name, err)
 				return
 			}
 
-			// 基本验证
-			if name := coreCollector.Name(); name != tc.name {
-				t.Errorf("Expected name %s, got %s", tc.name, name)
+			if result == nil {
+				t.Errorf("Collector %s returned nil result", tc.name)
+				return
 			}
 
-			// 这里我们不能直接调用 verifyCollector 因为类型问题
-			// 但我们已经在 TestCheckpointVerification 中测试了完整功能
-			t.Logf("Collector %s basic verification passed", tc.name)
+			t.Logf("Collector %s verification passed", tc.name)
 		})
 	}
 }
