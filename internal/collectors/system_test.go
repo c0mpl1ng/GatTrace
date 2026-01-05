@@ -191,7 +191,7 @@ func TestSystemCollector_Collect_Timeout(t *testing.T) {
 	// 创建已经超时的上下文
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Nanosecond)
 	defer cancel()
-	
+
 	// 等待确保上下文超时
 	time.Sleep(1 * time.Millisecond)
 
