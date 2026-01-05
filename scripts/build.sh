@@ -6,7 +6,7 @@ set -e
 
 # 项目信息
 PROJECT_NAME="GatTrace"
-VERSION=${VERSION:-"1.1.1"}
+VERSION=${VERSION:-"1.2.0"}
 BUILD_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 GIT_COMMIT=${GIT_COMMIT:-$(git rev-parse --short HEAD 2>/dev/null || echo "unknown")}
 
@@ -17,9 +17,12 @@ BINARY_NAME="GatTrace"
 # 支持的平台
 PLATFORMS=(
     "windows/amd64"
+    "windows/386"
     "windows/arm64"
     "linux/amd64"
+    "linux/386"
     "linux/arm64"
+    "linux/arm"
     "darwin/amd64"
     "darwin/arm64"
 )

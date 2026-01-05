@@ -5,7 +5,7 @@ setlocal enabledelayedexpansion
 
 REM 项目信息
 set PROJECT_NAME=GatTrace
-if "%VERSION%"=="" set VERSION=1.1.1
+if "%VERSION%"=="" set VERSION=1.2.0
 for /f "tokens=*" %%i in ('powershell -Command "Get-Date -UFormat '%%Y-%%m-%%dT%%H:%%M:%%SZ'"') do set BUILD_TIME=%%i
 if "%GIT_COMMIT%"=="" (
     for /f "tokens=*" %%i in ('git rev-parse --short HEAD 2^>nul') do set GIT_COMMIT=%%i
@@ -43,6 +43,16 @@ if errorlevel 1 (
 )
 echo    ✅ 完成
 
+echo 🔨 构建 windows/386...
+set GOOS=windows
+set GOARCH=386
+go build %BUILDFLAGS% -ldflags="%LDFLAGS%" -o %BUILD_DIR%/%BINARY_NAME%-windows-386.exe ./cmd/GatTrace
+if errorlevel 1 (
+    echo ❌ 构建失败: windows/386
+    exit /b 1
+)
+echo    ✅ 完成
+
 echo 🔨 构建 windows/arm64...
 set GOOS=windows
 set GOARCH=arm64
@@ -63,12 +73,32 @@ if errorlevel 1 (
 )
 echo    ✅ 完成
 
+echo 🔨 构建 linux/386...
+set GOOS=linux
+set GOARCH=386
+go build %BUILDFLAGS% -ldflags="%LDFLAGS%" -o %BUILD_DIR%/%BINARY_NAME%-linux-386 ./cmd/GatTrace
+if errorlevel 1 (
+    echo ❌ 构建失败: linux/386
+    exit /b 1
+)
+echo    ✅ 完成
+
 echo 🔨 构建 linux/arm64...
 set GOOS=linux
 set GOARCH=arm64
 go build %BUILDFLAGS% -ldflags="%LDFLAGS%" -o %BUILD_DIR%/%BINARY_NAME%-linux-arm64 ./cmd/GatTrace
 if errorlevel 1 (
     echo ❌ 构建失败: linux/arm64
+    exit /b 1
+)
+echo    ✅ 完成
+
+echo 🔨 构建 linux/arm...
+set GOOS=linux
+set GOARCH=arm
+go build %BUILDFLAGS% -ldflags="%LDFLAGS%" -o %BUILD_DIR%/%BINARY_NAME%-linux-arm ./cmd/GatTrace
+if errorlevel 1 (
+    echo ❌ 构建失败: linux/arm
     exit /b 1
 )
 echo    ✅ 完成

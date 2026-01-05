@@ -8,7 +8,7 @@ import (
 
 // Version 全局版本号常量
 // 修改此处即可更新整个项目的版本号
-const Version = "v1.1.1"
+const Version = "v1.2.0"
 
 // GetVersion 获取当前版本号
 func GetVersion() string {

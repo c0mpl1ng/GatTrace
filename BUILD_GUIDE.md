@@ -15,10 +15,13 @@ make build-all
 
 | 平台 | 架构 | 文件名 |
 |------|------|--------|
-| Windows | AMD64 | `GatTrace-windows-amd64.exe` |
+| Windows | AMD64 (64位) | `GatTrace-windows-amd64.exe` |
+| Windows | 386 (32位) | `GatTrace-windows-386.exe` |
 | Windows | ARM64 | `GatTrace-windows-arm64.exe` |
-| Linux | AMD64 | `GatTrace-linux-amd64` |
+| Linux | AMD64 (64位) | `GatTrace-linux-amd64` |
+| Linux | 386 (32位) | `GatTrace-linux-386` |
 | Linux | ARM64 | `GatTrace-linux-arm64` |
+| Linux | ARM (32位) | `GatTrace-linux-arm` |
 | macOS | AMD64 (Intel) | `GatTrace-darwin-amd64` |
 | macOS | ARM64 (Apple Silicon) | `GatTrace-darwin-arm64` |
 
@@ -34,9 +37,10 @@ make help
 make build-all
 
 # 分别构建不同平台
-make build-windows    # Windows 版本
-make build-linux      # Linux 版本
-make build-darwin     # macOS 版本
+make build-windows    # Windows 版本 (amd64, 386, arm64)
+make build-linux      # Linux 版本 (amd64, 386, arm64, arm)
+make build-darwin     # macOS 版本 (amd64, arm64)
+make build-32bit      # 仅32位版本 (windows-386, linux-386, linux-arm)
 
 # 构建当前平台
 make build
@@ -91,9 +95,12 @@ mkdir -p release
 
 # 编译各平台版本
 GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -ldflags="$LDFLAGS" -trimpath -o release/GatTrace-windows-amd64.exe ./cmd/GatTrace
+GOOS=windows GOARCH=386 CGO_ENABLED=0 go build -ldflags="$LDFLAGS" -trimpath -o release/GatTrace-windows-386.exe ./cmd/GatTrace
 GOOS=windows GOARCH=arm64 CGO_ENABLED=0 go build -ldflags="$LDFLAGS" -trimpath -o release/GatTrace-windows-arm64.exe ./cmd/GatTrace
 GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -ldflags="$LDFLAGS" -trimpath -o release/GatTrace-linux-amd64 ./cmd/GatTrace
+GOOS=linux GOARCH=386 CGO_ENABLED=0 go build -ldflags="$LDFLAGS" -trimpath -o release/GatTrace-linux-386 ./cmd/GatTrace
 GOOS=linux GOARCH=arm64 CGO_ENABLED=0 go build -ldflags="$LDFLAGS" -trimpath -o release/GatTrace-linux-arm64 ./cmd/GatTrace
+GOOS=linux GOARCH=arm CGO_ENABLED=0 go build -ldflags="$LDFLAGS" -trimpath -o release/GatTrace-linux-arm ./cmd/GatTrace
 GOOS=darwin GOARCH=amd64 CGO_ENABLED=0 go build -ldflags="$LDFLAGS" -trimpath -o release/GatTrace-darwin-amd64 ./cmd/GatTrace
 GOOS=darwin GOARCH=arm64 CGO_ENABLED=0 go build -ldflags="$LDFLAGS" -trimpath -o release/GatTrace-darwin-arm64 ./cmd/GatTrace
 ```
@@ -164,15 +171,20 @@ release/
 ├── checksums.txt                    # SHA256校验和文件
 ├── GatTrace-darwin-amd64           # macOS Intel版本
 ├── GatTrace-darwin-arm64           # macOS Apple Silicon版本
-├── GatTrace-linux-amd64            # Linux AMD64版本
+├── GatTrace-linux-amd64            # Linux AMD64版本 (64位)
+├── GatTrace-linux-386              # Linux 386版本 (32位)
 ├── GatTrace-linux-arm64            # Linux ARM64版本
-├── GatTrace-windows-amd64.exe      # Windows AMD64版本
+├── GatTrace-linux-arm              # Linux ARM版本 (32位)
+├── GatTrace-windows-amd64.exe      # Windows AMD64版本 (64位)
+├── GatTrace-windows-386.exe        # Windows 386版本 (32位)
 └── GatTrace-windows-arm64.exe      # Windows ARM64版本
 ```
 
 ### 文件大小参考
-- Windows: ~3.2-3.4 MB
-- Linux: ~3.4-3.7 MB  
+- Windows 64位: ~3.7-3.9 MB
+- Windows 32位: ~3.2-3.4 MB  
+- Linux 64位: ~3.4-3.7 MB
+- Linux 32位: ~3.0-3.2 MB
 - macOS: ~3.5-3.7 MB
 
 ## 🚀 发布流程

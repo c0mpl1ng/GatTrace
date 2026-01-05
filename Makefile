@@ -3,7 +3,7 @@
 
 # 项目信息
 PROJECT_NAME := GatTrace
-VERSION ?= 1.1.1
+VERSION ?= 1.2.0
 BUILD_TIME := $(shell date -u +"%Y-%m-%dT%H:%M:%SZ")
 GIT_COMMIT := $(shell git rev-parse --short HEAD 2>/dev/null || echo "unknown")
 
@@ -72,6 +72,7 @@ build-windows:
 	@echo "🔨 构建 Windows 版本..."
 	@mkdir -p $(BUILD_DIR)
 	@GOOS=windows GOARCH=amd64 $(GOBUILD) $(BUILDFLAGS) -ldflags="$(LDFLAGS)" -o $(BUILD_DIR)/$(BINARY_NAME)-windows-amd64.exe ./cmd/GatTrace
+	@GOOS=windows GOARCH=386 $(GOBUILD) $(BUILDFLAGS) -ldflags="$(LDFLAGS)" -o $(BUILD_DIR)/$(BINARY_NAME)-windows-386.exe ./cmd/GatTrace
 	@GOOS=windows GOARCH=arm64 $(GOBUILD) $(BUILDFLAGS) -ldflags="$(LDFLAGS)" -o $(BUILD_DIR)/$(BINARY_NAME)-windows-arm64.exe ./cmd/GatTrace
 
 # Linux 构建
@@ -80,7 +81,9 @@ build-linux:
 	@echo "🔨 构建 Linux 版本..."
 	@mkdir -p $(BUILD_DIR)
 	@GOOS=linux GOARCH=amd64 $(GOBUILD) $(BUILDFLAGS) -ldflags="$(LDFLAGS)" -o $(BUILD_DIR)/$(BINARY_NAME)-linux-amd64 ./cmd/GatTrace
+	@GOOS=linux GOARCH=386 $(GOBUILD) $(BUILDFLAGS) -ldflags="$(LDFLAGS)" -o $(BUILD_DIR)/$(BINARY_NAME)-linux-386 ./cmd/GatTrace
 	@GOOS=linux GOARCH=arm64 $(GOBUILD) $(BUILDFLAGS) -ldflags="$(LDFLAGS)" -o $(BUILD_DIR)/$(BINARY_NAME)-linux-arm64 ./cmd/GatTrace
+	@GOOS=linux GOARCH=arm $(GOBUILD) $(BUILDFLAGS) -ldflags="$(LDFLAGS)" -o $(BUILD_DIR)/$(BINARY_NAME)-linux-arm ./cmd/GatTrace
 
 # macOS 构建
 .PHONY: build-darwin
@@ -89,6 +92,15 @@ build-darwin:
 	@mkdir -p $(BUILD_DIR)
 	@GOOS=darwin GOARCH=amd64 $(GOBUILD) $(BUILDFLAGS) -ldflags="$(LDFLAGS)" -o $(BUILD_DIR)/$(BINARY_NAME)-darwin-amd64 ./cmd/GatTrace
 	@GOOS=darwin GOARCH=arm64 $(GOBUILD) $(BUILDFLAGS) -ldflags="$(LDFLAGS)" -o $(BUILD_DIR)/$(BINARY_NAME)-darwin-arm64 ./cmd/GatTrace
+
+# 32位构建
+.PHONY: build-32bit
+build-32bit:
+	@echo "🔨 构建 32位 版本..."
+	@mkdir -p $(BUILD_DIR)
+	@GOOS=windows GOARCH=386 $(GOBUILD) $(BUILDFLAGS) -ldflags="$(LDFLAGS)" -o $(BUILD_DIR)/$(BINARY_NAME)-windows-386.exe ./cmd/GatTrace
+	@GOOS=linux GOARCH=386 $(GOBUILD) $(BUILDFLAGS) -ldflags="$(LDFLAGS)" -o $(BUILD_DIR)/$(BINARY_NAME)-linux-386 ./cmd/GatTrace
+	@GOOS=linux GOARCH=arm $(GOBUILD) $(BUILDFLAGS) -ldflags="$(LDFLAGS)" -o $(BUILD_DIR)/$(BINARY_NAME)-linux-arm ./cmd/GatTrace
 
 # 运行
 .PHONY: run
@@ -150,10 +162,11 @@ help:
 	@echo "  test         - 运行所有测试"
 	@echo "  test-fast    - 运行快速测试"
 	@echo "  build        - 构建本地版本"
-	@echo "  build-all    - 跨平台构建"
-	@echo "  build-windows- 构建 Windows 版本"
-	@echo "  build-linux  - 构建 Linux 版本"
-	@echo "  build-darwin - 构建 macOS 版本"
+	@echo "  build-all    - 跨平台构建（包含32位）"
+	@echo "  build-windows- 构建 Windows 版本（64位+32位+ARM64）"
+	@echo "  build-linux  - 构建 Linux 版本（64位+32位+ARM64+ARM）"
+	@echo "  build-darwin - 构建 macOS 版本（Intel+Apple Silicon）"
+	@echo "  build-32bit  - 仅构建 32位 版本"
 	@echo "  run          - 构建并运行"
 	@echo "  install      - 安装到 GOPATH"
 	@echo "  dev          - 开发模式构建"
