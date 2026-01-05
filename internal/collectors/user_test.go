@@ -295,11 +295,11 @@ func TestUserCollector_PrivilegeDetection(t *testing.T) {
 	}
 
 	privilege := userInfo.Privileges[0]
-	
+
 	// 验证权限检测逻辑
 	hasAdminGroup := false
 	hasSudoGroup := false
-	
+
 	for _, group := range privilege.Groups {
 		if collector.isAdminGroup(group) {
 			hasAdminGroup = true

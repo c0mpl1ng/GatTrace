@@ -14,12 +14,12 @@ import (
 
 // App 应用程序实现
 type App struct {
-	version        string
-	sessionManager *SessionManager
+	version          string
+	sessionManager   *SessionManager
 	privilegeManager *PrivilegeManager
-	errorManager   *ErrorManager
-	systemMonitor  *SystemMonitor
-	collectors     []Collector
+	errorManager     *ErrorManager
+	systemMonitor    *SystemMonitor
+	collectors       []Collector
 }
 
 // NewApplication 创建新的应用程序实例
@@ -33,7 +33,7 @@ func NewApplication(version string) *App {
 func (a *App) Run(ctx context.Context, outputDir string, verbose bool) error {
 	// 初始化系统监控器
 	a.systemMonitor = NewSystemMonitor()
-	
+
 	// 捕获开始快照
 	if verbose {
 		fmt.Println("正在捕获系统开始状态快照...")
@@ -74,7 +74,7 @@ func (a *App) Run(ctx context.Context, outputDir string, verbose bool) error {
 	fmt.Printf("主机名: %s\n", sessionManager.GetHostname())
 	fmt.Printf("平台: %s\n", sessionManager.GetPlatform())
 	fmt.Printf("权限级别: %s\n", privilegeInfo.Level)
-	
+
 	if verbose {
 		fmt.Printf("注册了 %d 个采集器\n", len(a.collectors))
 	}
@@ -141,7 +141,7 @@ func (a *App) registerCollectors() error {
 		log.Println("注意: 尚未注册任何采集器，这是正常的开发阶段状态")
 		log.Println("在后续的开发中，将集成所有具体的采集器实现")
 	}
-	
+
 	return nil
 }
 
@@ -175,7 +175,7 @@ func (a *App) writeJSONFile(outputDir, filename string, data interface{}) error 
 	if err := os.MkdirAll(outputDir, 0755); err != nil {
 		return fmt.Errorf("failed to create output directory: %w", err)
 	}
-	
+
 	// 创建文件
 	filePath := filepath.Join(outputDir, filename)
 	file, err := os.Create(filePath)
@@ -183,14 +183,14 @@ func (a *App) writeJSONFile(outputDir, filename string, data interface{}) error 
 		return fmt.Errorf("failed to create file %s: %w", filename, err)
 	}
 	defer file.Close()
-	
+
 	// 使用JSON编码器写入数据
 	encoder := json.NewEncoder(file)
 	encoder.SetIndent("", "  ")
 	if err := encoder.Encode(data); err != nil {
 		return fmt.Errorf("failed to encode JSON for %s: %w", filename, err)
 	}
-	
+
 	return nil
 }
 
@@ -226,20 +226,20 @@ func (a *App) runCollectionProcess(ctx context.Context, outputDir string, verbos
 
 	// 创建采集结果通道
 	resultChan := make(chan *CollectorResult, len(runnableCollectors))
-	
+
 	// 使用WaitGroup等待所有采集器完成
 	var wg sync.WaitGroup
-	
+
 	// 启动采集器
 	for i, collector := range runnableCollectors {
 		wg.Add(1)
 		go func(idx int, c Collector) {
 			defer wg.Done()
-			
+
 			if verbose {
 				log.Printf("[%d/%d] 开始采集: %s", idx+1, len(runnableCollectors), c.Name())
 			}
-			
+
 			// 根据采集器类型设置不同的超时时间
 			// 安全日志和文件系统采集需要更长的时间
 			var timeout time.Duration
@@ -251,16 +251,16 @@ func (a *App) runCollectionProcess(ctx context.Context, outputDir string, verbos
 			default:
 				timeout = 30 * time.Second // 其他采集器使用默认超时
 			}
-			
+
 			// 为每个采集器创建子上下文
 			collectorCtx, cancel := context.WithTimeout(ctx, timeout)
 			defer cancel()
-			
+
 			// 执行采集
 			result := a.executeCollector(collectorCtx, c, verbose)
 			result.Index = idx + 1
 			result.Total = len(runnableCollectors)
-			
+
 			// 发送结果
 			select {
 			case resultChan <- result:
@@ -269,7 +269,7 @@ func (a *App) runCollectionProcess(ctx context.Context, outputDir string, verbos
 					log.Printf("采集器 %s 被取消", c.Name())
 				}
 			}
-			
+
 			if verbose {
 				if result.Error != nil {
 					log.Printf("[%d/%d] 采集失败: %s - %v", idx+1, len(runnableCollectors), c.Name(), result.Error)
@@ -312,9 +312,9 @@ func (a *App) runCollectionProcess(ctx context.Context, outputDir string, verbos
 				})
 			}
 		}
-		
+
 		// 显示进度
-		fmt.Printf("进度: %d/%d 完成 (成功: %d, 失败: %d)\n", 
+		fmt.Printf("进度: %d/%d 完成 (成功: %d, 失败: %d)\n",
 			result.Index, result.Total, successCount, failureCount)
 	}
 
@@ -340,37 +340,37 @@ type CollectorResult struct {
 // executeCollector 执行单个采集器
 func (a *App) executeCollector(ctx context.Context, collector Collector, verbose bool) *CollectorResult {
 	startTime := time.Now()
-	
+
 	result := &CollectorResult{
 		CollectorName: collector.Name(),
 	}
-	
+
 	// 检查权限
 	if skip, reason := a.privilegeManager.ShouldSkipCollector(collector); skip {
 		result.Error = fmt.Errorf("skipped due to insufficient privileges: %s", reason)
 		result.Duration = time.Since(startTime)
 		return result
 	}
-	
+
 	// 执行采集
 	collectionResult, err := collector.Collect(ctx)
 	result.Duration = time.Since(startTime)
-	
+
 	if err != nil {
 		result.Error = fmt.Errorf("collection failed: %w", err)
 		return result
 	}
-	
+
 	if collectionResult == nil {
 		result.Error = fmt.Errorf("collector returned nil result")
 		return result
 	}
-	
+
 	// 记录采集过程中的错误
 	for _, collErr := range collectionResult.Errors {
 		a.errorManager.RecordError(&collErr)
 	}
-	
+
 	result.Data = collectionResult.Data
 	return result
 }
@@ -380,7 +380,7 @@ func (a *App) saveCollectionResult(outputDir string, result *CollectorResult) er
 	if result.Data == nil {
 		return fmt.Errorf("no data to save")
 	}
-	
+
 	filename := fmt.Sprintf("%s.json", result.CollectorName)
 	return a.writeJSONFile(outputDir, filename, result.Data)
 }
@@ -446,16 +446,16 @@ func (a *App) generateOutputFiles(outputDir string, verbose bool) error {
 func (a *App) generateHTMLReport(outputDir string, verbose bool) error {
 	// 创建HTML生成器接口的实现
 	htmlGen := &htmlGeneratorImpl{outputDir: outputDir}
-	
+
 	// 生成HTML报告
 	if err := htmlGen.GenerateReport(); err != nil {
 		return fmt.Errorf("failed to generate HTML report: %w", err)
 	}
-	
+
 	if verbose {
 		log.Println("HTML报告生成完成，包含交互式数据展示和PID链接功能")
 	}
-	
+
 	return nil
 }
 
@@ -468,16 +468,16 @@ type htmlGeneratorImpl struct {
 func (h *htmlGeneratorImpl) GenerateReport() error {
 	// 读取所有JSON数据
 	data := h.loadAllJSONData()
-	
+
 	// 生成完整的自包含HTML
 	html := h.generateFullHTML(data)
-	
+
 	// 写入HTML文件
 	outputPath := filepath.Join(h.outputDir, "index.html")
 	if err := os.WriteFile(outputPath, []byte(html), 0644); err != nil {
 		return fmt.Errorf("failed to write HTML file: %w", err)
 	}
-	
+
 	return nil
 }
 
@@ -489,7 +489,7 @@ func (h *htmlGeneratorImpl) loadAllJSONData() map[string]interface{} {
 		"persistence.json", "filesystem.json", "security.json",
 		"system.json", "errors.json", "system_state.json",
 	}
-	
+
 	for _, filename := range jsonFiles {
 		filePath := filepath.Join(h.outputDir, filename)
 		if content, err := os.ReadFile(filePath); err == nil {
@@ -508,7 +508,7 @@ func (h *htmlGeneratorImpl) generateFullHTML(data map[string]interface{}) string
 	// 将数据转换为JSON字符串
 	jsonBytes, _ := json.Marshal(data)
 	jsonStr := string(jsonBytes)
-	
+
 	return fmt.Sprintf(`<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
@@ -927,10 +927,6 @@ h2 { color: #333; margin: 25px 0 15px; padding-bottom: 10px; border-bottom: 2px 
 .footer { text-align: center; padding: 20px; color: #666; font-size: 14px; margin-top: 20px; }`
 }
 
-
-
-
-
 // generateManifest 生成清单文件
 func (a *App) generateManifest(outputDir string, verbose bool) error {
 	// 简单的清单文件生成
@@ -1010,10 +1006,10 @@ func (a *App) generateSystemStateReport(outputDir string, verbose bool) error {
 	// 创建系统状态报告
 	stateReport := map[string]interface{}{
 		"metadata": map[string]interface{}{
-			"session_id":   a.sessionManager.GetSessionID(),
-			"hostname":     a.sessionManager.GetHostname(),
-			"platform":     a.sessionManager.GetPlatform(),
-			"generated_at": time.Now().UTC().Format(time.RFC3339),
+			"session_id":        a.sessionManager.GetSessionID(),
+			"hostname":          a.sessionManager.GetHostname(),
+			"platform":          a.sessionManager.GetPlatform(),
+			"generated_at":      time.Now().UTC().Format(time.RFC3339),
 			"collector_version": a.version,
 		},
 		"comparison": comparison,
@@ -1032,7 +1028,7 @@ func (a *App) generateSystemStateReport(outputDir string, verbose bool) error {
 			Err:       fmt.Errorf("system state changes detected during collection"),
 			Severity:  SeverityWarning,
 		})
-		
+
 		if verbose {
 			fmt.Printf("警告: 检测到系统状态变更:\n")
 			if len(comparison.ProcessChanges.Added) > 0 {

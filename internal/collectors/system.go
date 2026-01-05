@@ -54,7 +54,7 @@ func (c *SystemCollector) Collect(ctx context.Context) (*core.CollectionResult, 
 			Severity:  core.SeverityError,
 		}
 		errors = append(errors, collectionErr)
-		
+
 		// 如果平台适配器失败，尝试使用通用方法
 		systemStatus, err = c.collectGenericSystemStatus(ctx)
 		if err != nil {
@@ -89,7 +89,7 @@ func (c *SystemCollector) collectGenericSystemStatus(ctx context.Context) (*core
 	hostname, _ := core.GetSystemHostname()
 	platform := core.GetCurrentPlatform().String()
 	version := "1.0.0"
-	
+
 	metadata := core.NewMetadata(sessionID, hostname, platform, version)
 
 	systemStatus := &core.SystemStatus{
@@ -231,7 +231,7 @@ func (c *SystemCollector) getWindowsBootTimeAndUptime(ctx context.Context) (time
 	now := time.Now()
 	uptime := time.Duration(60) * time.Minute // 模拟1小时运行时间
 	bootTime := now.Add(-uptime)
-	
+
 	return bootTime, uptime, nil
 }
 
@@ -265,7 +265,7 @@ func (c *SystemCollector) getWindowsDrivers(ctx context.Context) ([]core.KernelM
 			Signed:      true,
 		},
 	}
-	
+
 	return modules, nil
 }
 
@@ -287,7 +287,7 @@ func (c *SystemCollector) getLinuxBootTimeAndUptime(ctx context.Context) (time.T
 	now := time.Now()
 	uptime := time.Duration(120) * time.Minute // 模拟2小时运行时间
 	bootTime := now.Add(-uptime)
-	
+
 	return bootTime, uptime, nil
 }
 
@@ -321,7 +321,7 @@ func (c *SystemCollector) getLinuxKernelModules(ctx context.Context) ([]core.Ker
 			Size:        278528,
 		},
 	}
-	
+
 	return modules, nil
 }
 
@@ -343,7 +343,7 @@ func (c *SystemCollector) getDarwinBootTimeAndUptime(ctx context.Context) (time.
 	now := time.Now()
 	uptime := time.Duration(90) * time.Minute // 模拟1.5小时运行时间
 	bootTime := now.Add(-uptime)
-	
+
 	return bootTime, uptime, nil
 }
 
@@ -377,7 +377,7 @@ func (c *SystemCollector) getDarwinKernelExtensions(ctx context.Context) ([]core
 			Signed:      true,
 		},
 	}
-	
+
 	return modules, nil
 }
 

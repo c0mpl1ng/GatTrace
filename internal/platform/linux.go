@@ -115,11 +115,11 @@ func (l *LinuxAdapter) GetUserInfo() (*core.UserInfo, error) {
 	}
 
 	userInfo := &core.UserInfo{
-		Metadata:      sessionManager.GetMetadata(),
-		CurrentUsers:  []core.User{},
-		RecentLogins:  []core.LoginRecord{},
-		Privileges:    []core.Privilege{},
-		SSHKeys:       []core.SSHKey{},
+		Metadata:     sessionManager.GetMetadata(),
+		CurrentUsers: []core.User{},
+		RecentLogins: []core.LoginRecord{},
+		Privileges:   []core.Privilege{},
+		SSHKeys:      []core.SSHKey{},
 	}
 
 	// 获取当前用户
@@ -450,7 +450,7 @@ func (l *LinuxAdapter) getRoutes() ([]core.Route, error) {
 
 	var routes []core.Route
 	scanner := bufio.NewScanner(file)
-	
+
 	// 跳过标题行
 	if scanner.Scan() {
 		// 处理路由条目
@@ -476,13 +476,13 @@ func (l *LinuxAdapter) hexToIP(hexStr string) string {
 	if len(hexStr) != 8 {
 		return "0.0.0.0"
 	}
-	
+
 	// 解析十六进制
 	val, err := strconv.ParseUint(hexStr, 16, 32)
 	if err != nil {
 		return "0.0.0.0"
 	}
-	
+
 	// 转换为 IP 地址（小端序）
 	return fmt.Sprintf("%d.%d.%d.%d",
 		val&0xFF,
@@ -947,7 +947,7 @@ func (l *LinuxAdapter) scanDirectoryForRecentFiles(dir string) ([]core.FileInfo,
 		// 只处理最近 7 天的文件
 		if !info.IsDir() && time.Since(info.ModTime()) < 7*24*time.Hour {
 			stat := info.Sys().(*syscall.Stat_t)
-			
+
 			fileInfo := core.FileInfo{
 				Path:       path,
 				Size:       info.Size(),
@@ -1047,7 +1047,7 @@ func (l *LinuxAdapter) parseLogFile(filePath, source string) ([]core.LogEntry, e
 	var entries []core.LogEntry
 	scanner := bufio.NewScanner(file)
 	lineCount := 0
-	
+
 	for scanner.Scan() && lineCount < 100 { // 限制读取行数
 		line := scanner.Text()
 		if strings.TrimSpace(line) != "" {

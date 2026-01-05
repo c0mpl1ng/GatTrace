@@ -35,7 +35,7 @@ func TestCheckpointVerification(t *testing.T) {
 
 	if !report.IsAllPassed() {
 		t.Errorf("Not all collectors passed verification. Failed: %d", report.FailedTests)
-		
+
 		// 打印失败的采集器详情
 		for name, result := range report.Results {
 			if !result.Passed {
@@ -49,7 +49,7 @@ func TestCheckpointVerification(t *testing.T) {
 
 	// 验证每个预期的采集器都存在
 	expectedCollectors := []string{
-		"network", "process", "user", "persistence", 
+		"network", "process", "user", "persistence",
 		"filesystem", "security", "system",
 	}
 
@@ -70,7 +70,7 @@ func TestCheckpointVerificationWithErrors(t *testing.T) {
 
 	adapter := NewMockPlatformAdapter()
 	adapter.SetShouldError(true) // 强制适配器返回错误
-	
+
 	verifier := NewCheckpointVerification(adapter)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
@@ -90,7 +90,7 @@ func TestCheckpointVerificationWithErrors(t *testing.T) {
 	if !report.IsAllPassed() {
 		t.Logf("Some collectors failed with adapter errors (this may be expected)")
 		report.PrintReport()
-		
+
 		// 但至少应该有数据返回
 		for name, result := range report.Results {
 			if !result.Passed {

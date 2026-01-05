@@ -39,13 +39,13 @@ func TestNewSessionManager(t *testing.T) {
 func TestSessionIDUniqueness(t *testing.T) {
 	// 测试 SessionID 唯一性
 	sessions := make(map[string]bool)
-	
+
 	for i := 0; i < 100; i++ {
 		sm, err := NewSessionManager("v1.0.0")
 		if err != nil {
 			t.Fatalf("NewSessionManager failed: %v", err)
 		}
-		
+
 		sessionID := sm.GetSessionID()
 		if sessions[sessionID] {
 			t.Errorf("Duplicate session ID found: %s", sessionID)

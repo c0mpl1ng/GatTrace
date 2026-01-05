@@ -106,7 +106,7 @@ func (h *HTMLGenerator) ValidateAssets() error {
 // GetEmbeddedFiles 获取嵌入文件列表（用于测试）
 func (h *HTMLGenerator) GetEmbeddedFiles() ([]string, error) {
 	var files []string
-	
+
 	err := fs.WalkDir(webAssets, ".", func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
@@ -116,6 +116,6 @@ func (h *HTMLGenerator) GetEmbeddedFiles() ([]string, error) {
 		}
 		return nil
 	})
-	
+
 	return files, err
 }

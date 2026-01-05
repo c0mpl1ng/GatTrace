@@ -107,11 +107,11 @@ func (w *WindowsAdapter) GetUserInfo() (*core.UserInfo, error) {
 	}
 
 	userInfo := &core.UserInfo{
-		Metadata:      sessionManager.GetMetadata(),
-		CurrentUsers:  []core.User{},
-		RecentLogins:  []core.LoginRecord{},
-		Privileges:    []core.Privilege{},
-		SSHKeys:       []core.SSHKey{},
+		Metadata:     sessionManager.GetMetadata(),
+		CurrentUsers: []core.User{},
+		RecentLogins: []core.LoginRecord{},
+		Privileges:   []core.Privilege{},
+		SSHKeys:      []core.SSHKey{},
 	}
 
 	// 获取当前用户
@@ -748,7 +748,7 @@ func (w *WindowsAdapter) getWindowsKernelModules() ([]core.KernelModule, error) 
 			Signed:      true,
 		},
 	}
-	
+
 	return modules, nil
 }
 

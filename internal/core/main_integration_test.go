@@ -16,7 +16,7 @@ func TestMainIntegrationProperty(t *testing.T) {
 	t.Run("MainIntegrationProperty", func(t *testing.T) {
 		for i := 0; i < iterations; i++ {
 			version := fmt.Sprintf("v1.0.%d", i)
-			
+
 			// 创建临时输出目录
 			tempDir := t.TempDir()
 			outputDir := filepath.Join(tempDir, fmt.Sprintf("integration-test-%d", i))
@@ -76,7 +76,7 @@ func TestSessionManagerBasic(t *testing.T) {
 
 		for i := 0; i < iterations; i++ {
 			version := fmt.Sprintf("v1.0.%d", i)
-			
+
 			// 创建会话管理器
 			sessionManager, err := NewSessionManager(version)
 			if err != nil {
@@ -132,7 +132,7 @@ func TestApplicationVersionConsistency(t *testing.T) {
 	t.Run("ApplicationVersionConsistency", func(t *testing.T) {
 		for i := 0; i < iterations; i++ {
 			version := fmt.Sprintf("v2.%d.%d", i/10, i%10)
-			
+
 			// 创建临时输出目录
 			tempDir := t.TempDir()
 			outputDir := filepath.Join(tempDir, fmt.Sprintf("version-test-%d", i))
@@ -195,7 +195,7 @@ func findSubstring(s, substr string) bool {
 	if len(s) < len(substr) {
 		return false
 	}
-	
+
 	for i := 0; i <= len(s)-len(substr); i++ {
 		match := true
 		for j := 0; j < len(substr); j++ {

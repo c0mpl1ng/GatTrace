@@ -95,7 +95,7 @@ func (c *SecurityCollector) collectGenericSecurityLogs(ctx context.Context) (*co
 	hostname, _ := core.GetSystemHostname()
 	platform := core.GetCurrentPlatform().String()
 	version := "1.0.0"
-	
+
 	metadata := core.NewMetadata(sessionID, hostname, platform, version)
 
 	securityLogs := &core.SecurityLogs{
@@ -201,7 +201,7 @@ func (c *SecurityCollector) getWindowsSecurityLogs(ctx context.Context) ([]core.
 		// 驱动加载
 		219: true, // 驱动加载失败
 	}
-	
+
 	systemEntries, err := c.queryWindowsEventLogDirect(ctx, "System", systemEventIDs, cutoffTime)
 	if err == nil {
 		for i := range systemEntries {
@@ -228,7 +228,7 @@ func (c *SecurityCollector) getWindowsSecurityLogs(ctx context.Context) ([]core.
 		1001: true, // Windows 错误报告
 		1002: true, // 应用程序挂起
 	}
-	
+
 	appEntries, err := c.queryWindowsEventLogDirect(ctx, "Application", applicationEventIDs, cutoffTime)
 	if err == nil {
 		for i := range appEntries {
@@ -250,7 +250,7 @@ func (c *SecurityCollector) getWindowsSecurityLogs(ctx context.Context) ([]core.
 // queryWindowsDefenderLogs 查询 Windows Defender 日志
 func (c *SecurityCollector) queryWindowsDefenderLogs(ctx context.Context, cutoffTime time.Time) ([]core.LogEntry, error) {
 	var entries []core.LogEntry
-	
+
 	// Windows Defender 事件ID
 	defenderEventIDs := map[int]bool{
 		1116: true, // 检测到恶意软件或潜在有害软件
@@ -268,7 +268,7 @@ func (c *SecurityCollector) queryWindowsDefenderLogs(ctx context.Context, cutoff
 		5010: true, // 扫描已禁用
 		5012: true, // 扫描已启用
 	}
-	
+
 	defenderEntries, err := c.queryWindowsEventLogDirect(ctx, "Microsoft-Windows-Windows Defender/Operational", defenderEventIDs, cutoffTime)
 	if err == nil {
 		for i := range defenderEntries {
@@ -277,7 +277,7 @@ func (c *SecurityCollector) queryWindowsDefenderLogs(ctx context.Context, cutoff
 		}
 		entries = append(entries, defenderEntries...)
 	}
-	
+
 	return entries, nil
 }
 
@@ -323,7 +323,7 @@ func (c *SecurityCollector) querySecurityLogSimple(ctx context.Context, cutoffTi
 	// 解析 XML 格式输出
 	outputStr := string(output)
 	allEntries := c.parseWevtutilXMLOutput(outputStr, cutoffTime)
-	
+
 	// 只保留我们关心的事件ID
 	for _, entry := range allEntries {
 		if entry.EventID != "" {
@@ -355,17 +355,17 @@ func (c *SecurityCollector) queryWindowsEventLogDirect(ctx context.Context, chan
 	startTime := time.Now().AddDate(0, 0, -daysAgo)
 	// Windows 事件日志时间格式 - 使用正确的格式
 	timeFilter := startTime.UTC().Format("2006-01-02T15:04:05.000Z")
-	
+
 	// 构建事件ID过滤条件 - 如果事件ID太多，分批查询
 	var allEntries []core.LogEntry
 	var lastErr error
-	
+
 	// 将事件ID转换为切片以便分批处理
 	var idSlice []int
 	for id := range eventIDs {
 		idSlice = append(idSlice, id)
 	}
-	
+
 	// 每批最多处理 20 个事件ID，避免 XPath 查询过长
 	batchSize := 20
 	for i := 0; i < len(idSlice); i += batchSize {
@@ -374,17 +374,17 @@ func (c *SecurityCollector) queryWindowsEventLogDirect(ctx context.Context, chan
 			end = len(idSlice)
 		}
 		batch := idSlice[i:end]
-		
+
 		// 构建当前批次的事件ID过滤条件
 		var idConditions []string
 		for _, id := range batch {
 			idConditions = append(idConditions, fmt.Sprintf("EventID=%d", id))
 		}
 		idFilter := strings.Join(idConditions, " or ")
-		
+
 		// XPath 查询
 		xpath := fmt.Sprintf("*[System[TimeCreated[@SystemTime>='%s'] and (%s)]]", timeFilter, idFilter)
-		
+
 		// 使用 wevtutil 查询，/rd:true 表示从最新到最旧，/f:RenderedXml 输出 XML 格式（包含完整消息）
 		cmd := exec.CommandContext(ctx, "wevtutil", "qe", channel, "/q:"+xpath, "/rd:true", "/f:RenderedXml")
 		output, err := cmd.Output()
@@ -409,12 +409,12 @@ func (c *SecurityCollector) queryWindowsEventLogDirect(ctx context.Context, chan
 
 		// XML 输出在中文 Windows 上也可能是 GBK 编码
 		outputStr := decodeGBKBytes(output)
-		
+
 		// 解析 wevtutil XML 输出
 		batchEntries := c.parseWevtutilXMLOutput(outputStr, cutoffTime)
 		allEntries = append(allEntries, batchEntries...)
 	}
-	
+
 	// 如果所有批次都失败了，尝试完整的 PowerShell 查询
 	if len(allEntries) == 0 {
 		psEntries, err := c.queryWindowsEventLogPowerShell(ctx, channel, eventIDFilter, daysAgo)
@@ -423,7 +423,7 @@ func (c *SecurityCollector) queryWindowsEventLogDirect(ctx context.Context, chan
 		}
 		return psEntries, nil
 	}
-	
+
 	return allEntries, nil
 }
 
@@ -525,19 +525,19 @@ try {
 // parseWevtutilXMLOutput 解析 wevtutil XML 格式输出
 func (c *SecurityCollector) parseWevtutilXMLOutput(output string, cutoffTime time.Time) []core.LogEntry {
 	var entries []core.LogEntry
-	
+
 	// RenderedXml 格式每个事件是一个 <Event> 元素
 	// 使用正则表达式提取每个事件
 	eventRegex := regexp.MustCompile(`(?s)<Event[^>]*>.*?</Event>`)
 	events := eventRegex.FindAllString(output, -1)
-	
+
 	for _, eventXML := range events {
 		entry := c.parseXMLEvent(eventXML, cutoffTime)
 		if entry != nil {
 			entries = append(entries, *entry)
 		}
 	}
-	
+
 	return entries
 }
 
@@ -550,7 +550,7 @@ func (c *SecurityCollector) parseXMLEvent(eventXML string, cutoffTime time.Time)
 		return nil
 	}
 	eventID := eventIDMatch[1]
-	
+
 	// 提取时间戳
 	timeRegex := regexp.MustCompile(`<TimeCreated[^>]*SystemTime=['"]([^'"]+)['"]`)
 	timeMatch := timeRegex.FindStringSubmatch(eventXML)
@@ -565,16 +565,16 @@ func (c *SecurityCollector) parseXMLEvent(eventXML string, cutoffTime time.Time)
 			timestamp = t.Local()
 		}
 	}
-	
+
 	if timestamp.IsZero() {
 		timestamp = time.Now()
 	}
-	
+
 	// 检查时间是否在范围内
 	if !cutoffTime.IsZero() && timestamp.Before(cutoffTime) {
 		return nil
 	}
-	
+
 	// 提取 Provider
 	providerRegex := regexp.MustCompile(`<Provider[^>]*Name=['"]([^'"]+)['"]`)
 	providerMatch := providerRegex.FindStringSubmatch(eventXML)
@@ -582,7 +582,7 @@ func (c *SecurityCollector) parseXMLEvent(eventXML string, cutoffTime time.Time)
 	if len(providerMatch) >= 2 {
 		provider = providerMatch[1]
 	}
-	
+
 	// 提取 Level
 	levelRegex := regexp.MustCompile(`<Level>(\d+)</Level>`)
 	levelMatch := levelRegex.FindStringSubmatch(eventXML)
@@ -601,7 +601,7 @@ func (c *SecurityCollector) parseXMLEvent(eventXML string, cutoffTime time.Time)
 			level = "Verbose"
 		}
 	}
-	
+
 	// 提取 RenderingInfo 中的 Message（这是完整的事件描述）
 	// RenderedXml 格式会包含 <RenderingInfo> 元素
 	messageRegex := regexp.MustCompile(`(?s)<Message>([^<]*(?:<[^/][^<]*</[^>]+>[^<]*)*)</Message>`)
@@ -617,7 +617,7 @@ func (c *SecurityCollector) parseXMLEvent(eventXML string, cutoffTime time.Time)
 		message = strings.ReplaceAll(message, "&#xD;", "\r")
 		message = strings.ReplaceAll(message, "&#xA;", "\n")
 	}
-	
+
 	// 如果没有 Message，尝试从 EventData 提取
 	if message == "" {
 		eventDataRegex := regexp.MustCompile(`(?s)<EventData>(.*?)</EventData>`)
@@ -637,12 +637,12 @@ func (c *SecurityCollector) parseXMLEvent(eventXML string, cutoffTime time.Time)
 			}
 		}
 	}
-	
+
 	// 如果还是没有消息，使用事件类型名称
 	if message == "" {
 		message = c.getWindowsEventTypeName(eventID)
 	}
-	
+
 	// 提取用户
 	user := c.extractUser(message)
 	if user == "" {
@@ -653,10 +653,10 @@ func (c *SecurityCollector) parseXMLEvent(eventXML string, cutoffTime time.Time)
 			user = userMatch[1]
 		}
 	}
-	
+
 	eventType := c.getWindowsEventTypeName(eventID)
 	eventCategory := c.categorizeWindowsEvent(eventID)
-	
+
 	return &core.LogEntry{
 		Timestamp: timestamp,
 		Source:    provider,
@@ -674,7 +674,7 @@ func (c *SecurityCollector) parseXMLEvent(eventXML string, cutoffTime time.Time)
 // parseWevtutilTextOutput 解析 wevtutil 文本格式输出
 func (c *SecurityCollector) parseWevtutilTextOutput(output string, cutoffTime time.Time) []core.LogEntry {
 	var entries []core.LogEntry
-	
+
 	// wevtutil /f:text 输出格式：
 	// Event[0]:
 	//   Log Name:      Security
@@ -691,41 +691,41 @@ func (c *SecurityCollector) parseWevtutilTextOutput(output string, cutoffTime ti
 	//   Description:
 	//   为新登录分配了特殊权限。
 	//   ...
-	
+
 	// 使用 "Event[" 作为分隔符来分割事件
 	// 首先标准化换行符
 	output = strings.ReplaceAll(output, "\r\n", "\n")
-	
+
 	// 按 "Event[" 分割
 	parts := strings.Split(output, "Event[")
-	
+
 	for _, part := range parts {
 		part = strings.TrimSpace(part)
 		if part == "" {
 			continue
 		}
-		
+
 		// 重新添加 "Event[" 前缀（因为 Split 会移除它）
 		event := "Event[" + part
-		
+
 		entry := c.parseWevtutilEvent(event, cutoffTime)
 		if entry != nil {
 			entries = append(entries, *entry)
 		}
 	}
-	
+
 	return entries
 }
 
 // parseWevtutilEvent 解析单个 wevtutil 事件
 func (c *SecurityCollector) parseWevtutilEvent(event string, cutoffTime time.Time) *core.LogEntry {
 	lines := strings.Split(event, "\n")
-	
+
 	var eventID, level, source, user, description string
 	var timestamp time.Time
 	inDescription := false
 	var descBuilder strings.Builder
-	
+
 	// wevtutil 输出的标准字段名（用于判断是否是新字段）
 	standardFields := map[string]bool{
 		"Event":       true,
@@ -742,23 +742,23 @@ func (c *SecurityCollector) parseWevtutilEvent(event string, cutoffTime time.Tim
 		"Computer":    true,
 		"Description": true,
 		// 中文字段名
-		"日志名称": true,
-		"来源":   true,
-		"日期":   true,
+		"日志名称":  true,
+		"来源":    true,
+		"日期":    true,
 		"事件 ID": true,
-		"任务类别": true,
-		"级别":   true,
-		"操作代码": true,
-		"关键字":  true,
-		"用户":   true,
-		"用户名":  true,
-		"计算机":  true,
-		"描述":   true,
+		"任务类别":  true,
+		"级别":    true,
+		"操作代码":  true,
+		"关键字":   true,
+		"用户":    true,
+		"用户名":   true,
+		"计算机":   true,
+		"描述":    true,
 	}
-	
+
 	for _, line := range lines {
 		line = strings.TrimSpace(line)
-		
+
 		// 检查是否进入描述区域
 		if strings.HasPrefix(line, "Description:") || strings.HasPrefix(line, "描述:") {
 			inDescription = true
@@ -769,7 +769,7 @@ func (c *SecurityCollector) parseWevtutilEvent(event string, cutoffTime time.Tim
 			}
 			continue
 		}
-		
+
 		if inDescription {
 			// 检查是否是新的标准字段（而不是描述内容中的冒号）
 			isNewField := false
@@ -783,11 +783,11 @@ func (c *SecurityCollector) parseWevtutilEvent(event string, cutoffTime time.Tim
 					}
 				}
 			}
-			
+
 			if isNewField {
 				break
 			}
-			
+
 			// 继续添加描述内容
 			if line != "" {
 				if descBuilder.Len() > 0 {
@@ -797,7 +797,7 @@ func (c *SecurityCollector) parseWevtutilEvent(event string, cutoffTime time.Tim
 			}
 			continue
 		}
-		
+
 		// 解析字段
 		if strings.HasPrefix(line, "Event ID:") || strings.HasPrefix(line, "事件 ID:") {
 			parts := strings.SplitN(line, ":", 2)
@@ -843,32 +843,32 @@ func (c *SecurityCollector) parseWevtutilEvent(event string, cutoffTime time.Tim
 			}
 		}
 	}
-	
+
 	description = strings.TrimSpace(descBuilder.String())
-	
+
 	// 如果没有解析到事件ID，跳过
 	if eventID == "" {
 		return nil
 	}
-	
+
 	// 如果时间戳为空，使用当前时间
 	if timestamp.IsZero() {
 		timestamp = time.Now()
 	}
-	
+
 	// 检查时间是否在范围内
 	if !cutoffTime.IsZero() && timestamp.Before(cutoffTime) {
 		return nil
 	}
-	
+
 	// 如果没有从 User 字段获取到用户，尝试从描述中提取
 	if user == "" {
 		user = c.extractUser(description)
 	}
-	
+
 	eventType := c.getWindowsEventTypeName(eventID)
 	eventCategory := c.categorizeWindowsEvent(eventID)
-	
+
 	return &core.LogEntry{
 		Timestamp: timestamp,
 		Source:    source,
@@ -921,21 +921,21 @@ func decodeGBKBytes(data []byte) string {
 			return s
 		}
 	}
-	
+
 	// 尝试 GBK 解码
 	decoder := simplifiedchinese.GBK.NewDecoder()
 	result, _, err := transform.Bytes(decoder, data)
 	if err == nil {
 		return string(result)
 	}
-	
+
 	// 尝试 GB18030 解码
 	decoder = simplifiedchinese.GB18030.NewDecoder()
 	result, _, err = transform.Bytes(decoder, data)
 	if err == nil {
 		return string(result)
 	}
-	
+
 	// 解码失败，返回原始数据
 	return string(data)
 }
@@ -984,13 +984,13 @@ type WindowsEventJSON struct {
 // parseWindowsEventLogJSON 解析 PowerShell JSON 输出（保留用于兼容）
 func (c *SecurityCollector) parseWindowsEventLogJSON(jsonStr, category string) []core.LogEntry {
 	var entries []core.LogEntry
-	
+
 	// 尝试解析为JSON数组
 	jsonStr = strings.TrimSpace(jsonStr)
 	if jsonStr == "" {
 		return entries
 	}
-	
+
 	// 处理单个对象或数组
 	var events []WindowsEventJSON
 	if strings.HasPrefix(jsonStr, "[") {
@@ -1009,26 +1009,26 @@ func (c *SecurityCollector) parseWindowsEventLogJSON(jsonStr, category string) [
 	} else {
 		return c.parseWindowsEventLogJSONFallback(jsonStr, category)
 	}
-	
+
 	for _, event := range events {
 		eventID := fmt.Sprintf("%d", event.Id)
 		eventCategory := c.categorizeWindowsEvent(eventID)
-		
+
 		// 解析时间戳
 		timestamp := time.Now()
 		if t, err := time.Parse(time.RFC3339, event.TimeCreated); err == nil {
 			timestamp = t.Local()
 		}
-		
+
 		// 提取用户（从Message中提取）
 		user := c.extractUser(event.Message)
-		
+
 		// 使用完整的Message作为事件内容（这是Windows事件查看器"常规"标签页的内容）
 		eventContent := event.Message
 		if eventContent == "" {
 			eventContent = c.getWindowsEventTypeName(eventID)
 		}
-		
+
 		entry := core.LogEntry{
 			Timestamp: timestamp,
 			Source:    event.ProviderName,
@@ -1041,46 +1041,46 @@ func (c *SecurityCollector) parseWindowsEventLogJSON(jsonStr, category string) [
 				"user":       user,
 			},
 		}
-		
+
 		entries = append(entries, entry)
 	}
-	
+
 	return entries
 }
 
 // parseWindowsEventLogJSONFallback 回退的JSON解析方法（按行处理）
 func (c *SecurityCollector) parseWindowsEventLogJSONFallback(jsonStr, category string) []core.LogEntry {
 	var entries []core.LogEntry
-	
+
 	lines := strings.Split(jsonStr, "\n")
 	for _, line := range lines {
 		line = strings.TrimSpace(line)
 		if line == "" || line == "[" || line == "]" {
 			continue
 		}
-		
+
 		// 提取事件ID
 		eventID := c.extractEventID(line)
 		eventCategory := category
 		if eventID != "" {
 			eventCategory = c.categorizeWindowsEvent(eventID)
 		}
-		
+
 		// 提取时间戳
 		timestamp := time.Now()
 		if t, err := c.extractTimestamp(line); err == nil {
 			timestamp = t
 		}
-		
+
 		// 提取用户
 		user := c.extractUser(line)
-		
+
 		// 提取Message字段内容
 		eventContent := c.extractMessageField(line)
 		if eventContent == "" {
 			eventContent = c.getWindowsEventTypeName(eventID)
 		}
-		
+
 		entry := core.LogEntry{
 			Timestamp: timestamp,
 			Source:    "Windows Event Log",
@@ -1093,10 +1093,10 @@ func (c *SecurityCollector) parseWindowsEventLogJSONFallback(jsonStr, category s
 				"user":       user,
 			},
 		}
-		
+
 		entries = append(entries, entry)
 	}
-	
+
 	return entries
 }
 
@@ -1119,21 +1119,21 @@ func (c *SecurityCollector) extractMessageField(line string) string {
 // parseWevtutilOutput 解析 wevtutil 输出
 func (c *SecurityCollector) parseWevtutilOutput(output, category string, cutoffTime time.Time) []core.LogEntry {
 	var entries []core.LogEntry
-	
+
 	// 按事件分割（wevtutil text格式用空行分隔事件）
 	events := strings.Split(output, "\r\n\r\n")
 	for _, event := range events {
 		if strings.TrimSpace(event) == "" {
 			continue
 		}
-		
+
 		// 提取事件ID
 		eventID := c.extractEventID(event)
 		eventCategory := category
 		if eventID != "" {
 			eventCategory = c.categorizeWindowsEvent(eventID)
 		}
-		
+
 		// 提取时间戳
 		timestamp := time.Now()
 		if t, err := c.extractTimestamp(event); err == nil {
@@ -1142,16 +1142,16 @@ func (c *SecurityCollector) parseWevtutilOutput(output, category string, cutoffT
 				continue
 			}
 		}
-		
+
 		// 提取用户
 		user := c.extractUser(event)
-		
+
 		// 提取完整的事件描述（wevtutil text格式中的Description字段）
 		eventContent := c.extractWevtutilDescription(event)
 		if eventContent == "" {
 			eventContent = c.getWindowsEventTypeName(eventID)
 		}
-		
+
 		entry := core.LogEntry{
 			Timestamp: timestamp,
 			Source:    "Windows Event Log",
@@ -1164,10 +1164,10 @@ func (c *SecurityCollector) parseWevtutilOutput(output, category string, cutoffT
 				"user":       user,
 			},
 		}
-		
+
 		entries = append(entries, entry)
 	}
-	
+
 	return entries
 }
 
@@ -1177,7 +1177,7 @@ func (c *SecurityCollector) extractWevtutilDescription(event string) string {
 	lines := strings.Split(event, "\n")
 	var description strings.Builder
 	inDescription := false
-	
+
 	for _, line := range lines {
 		line = strings.TrimSpace(line)
 		if strings.HasPrefix(line, "Description:") {
@@ -1189,7 +1189,7 @@ func (c *SecurityCollector) extractWevtutilDescription(event string) string {
 			}
 			continue
 		}
-		
+
 		// 如果在描述区域内，且不是新的字段，则继续添加
 		if inDescription {
 			// 检查是否是新字段（以字母开头，后跟冒号）
@@ -1206,7 +1206,7 @@ func (c *SecurityCollector) extractWevtutilDescription(event string) string {
 			description.WriteString(line)
 		}
 	}
-	
+
 	return description.String()
 }
 
@@ -1307,7 +1307,7 @@ func (c *SecurityCollector) getWindowsEventTypeName(eventID string) string {
 		"104":  "事件日志清除",
 		"1100": "事件日志服务关闭",
 		"1104": "安全日志已满",
-		
+
 		// ========== System 日志 ==========
 		// 服务相关
 		"7034": "服务意外终止",
@@ -1322,16 +1322,16 @@ func (c *SecurityCollector) getWindowsEventTypeName(eventID string) string {
 		"6009": "系统启动信息",
 		"6013": "系统运行时间",
 		// 时间变更
-		"1":    "时间变更",
+		"1": "时间变更",
 		// 驱动
-		"219":  "驱动加载失败",
-		
+		"219": "驱动加载失败",
+
 		// ========== Application 日志 ==========
 		// 应用程序错误
 		"1000": "应用程序错误",
 		"1001": "Windows错误报告",
 		"1002": "应用程序挂起",
-		
+
 		// ========== Windows Defender ==========
 		"1116": "检测到恶意软件",
 		"1117": "恶意软件操作",
@@ -1350,7 +1350,7 @@ func (c *SecurityCollector) getWindowsEventTypeName(eventID string) string {
 		"5010": "扫描已禁用",
 		"5012": "扫描已启用",
 	}
-	
+
 	if name, ok := eventNames[eventID]; ok {
 		return name
 	}
@@ -1360,12 +1360,12 @@ func (c *SecurityCollector) getWindowsEventTypeName(eventID string) string {
 // generateWindowsEventSummary 生成Windows事件摘要
 func (c *SecurityCollector) generateWindowsEventSummary(eventID, rawLog string) string {
 	eventType := c.getWindowsEventTypeName(eventID)
-	
+
 	// 提取关键信息
 	user := c.extractUser(rawLog)
 	ip := c.extractIPAddress(rawLog)
 	process := c.extractProcessName(rawLog)
-	
+
 	// 根据事件类型生成摘要
 	var summary string
 	switch eventID {
@@ -1402,7 +1402,7 @@ func (c *SecurityCollector) generateWindowsEventSummary(eventID, rawLog string) 
 			summary = eventType
 		}
 	}
-	
+
 	return summary
 }
 
@@ -1417,7 +1417,7 @@ func (c *SecurityCollector) extractUser(line string) string {
 		`(?i)for\s+([a-zA-Z0-9_\-\.]+)\s+from`,
 		`(?i)Subject.*?Account\s*Name[:\s]+([^\s,\r\n]+)`,
 	}
-	
+
 	for _, pattern := range patterns {
 		re := regexp.MustCompile(pattern)
 		if matches := re.FindStringSubmatch(line); len(matches) > 1 {
@@ -1438,7 +1438,7 @@ func (c *SecurityCollector) extractIPAddress(line string) string {
 	if match := ipv4Regex.FindString(line); match != "" && match != "0.0.0.0" && match != "127.0.0.1" {
 		return match
 	}
-	
+
 	// 源网络地址
 	srcAddrRegex := regexp.MustCompile(`(?i)Source\s*Network\s*Address[:\s]+([^\s,\r\n]+)`)
 	if matches := srcAddrRegex.FindStringSubmatch(line); len(matches) > 1 {
@@ -1446,7 +1446,7 @@ func (c *SecurityCollector) extractIPAddress(line string) string {
 			return matches[1]
 		}
 	}
-	
+
 	return ""
 }
 
@@ -1457,7 +1457,7 @@ func (c *SecurityCollector) extractProcessName(line string) string {
 		`(?i)Process\s*Name[:\s]+([^\r\n]+)`,
 		`([a-zA-Z0-9_\-]+\.exe)`,
 	}
-	
+
 	for _, pattern := range patterns {
 		re := regexp.MustCompile(pattern)
 		if matches := re.FindStringSubmatch(line); len(matches) > 1 {
@@ -1485,8 +1485,8 @@ func (c *SecurityCollector) getLinuxSecurityLogs(ctx context.Context) ([]core.Lo
 		category string
 	}{
 		// 认证与登录日志
-		{"/var/log/auth.log", "authentication"},      // Debian/Ubuntu
-		{"/var/log/secure", "authentication"},        // RHEL/CentOS
+		{"/var/log/auth.log", "authentication"}, // Debian/Ubuntu
+		{"/var/log/secure", "authentication"},   // RHEL/CentOS
 		// 审计日志 - 安全机制触发
 		{"/var/log/audit/audit.log", "security_mechanism"},
 		// 系统日志 - 可能包含安全相关信息
@@ -1551,10 +1551,10 @@ func (c *SecurityCollector) parseSecurityLogFile(filePath, category string, cuto
 
 		// 提取用户
 		user := c.extractUser(line)
-		
+
 		// 提取事件ID
 		eventID := c.extractEventID(line)
-		
+
 		// 生成事件摘要
 		eventType := c.categorizeLinuxLogLine(line, category)
 		eventSummary := c.generateLinuxEventSummary(line, eventType, user)
@@ -1587,24 +1587,24 @@ func (c *SecurityCollector) parseSecurityLogFile(filePath, category string, cuto
 // categorizeLinuxLogLine 分类Linux日志行
 func (c *SecurityCollector) categorizeLinuxLogLine(line, defaultCategory string) string {
 	lineLower := strings.ToLower(line)
-	
+
 	// 认证相关
-	if strings.Contains(lineLower, "authentication") || 
-	   strings.Contains(lineLower, "session opened") ||
-	   strings.Contains(lineLower, "session closed") ||
-	   strings.Contains(lineLower, "accepted") ||
-	   strings.Contains(lineLower, "failed password") ||
-	   strings.Contains(lineLower, "invalid user") {
+	if strings.Contains(lineLower, "authentication") ||
+		strings.Contains(lineLower, "session opened") ||
+		strings.Contains(lineLower, "session closed") ||
+		strings.Contains(lineLower, "accepted") ||
+		strings.Contains(lineLower, "failed password") ||
+		strings.Contains(lineLower, "invalid user") {
 		return "认证登录"
 	}
-	
+
 	// sudo/权限相关
 	if strings.Contains(lineLower, "sudo") ||
-	   strings.Contains(lineLower, "su:") ||
-	   strings.Contains(lineLower, "privilege") {
+		strings.Contains(lineLower, "su:") ||
+		strings.Contains(lineLower, "privilege") {
 		return "权限提升"
 	}
-	
+
 	// SSH相关
 	if strings.Contains(lineLower, "sshd") {
 		if strings.Contains(lineLower, "accepted") {
@@ -1615,22 +1615,22 @@ func (c *SecurityCollector) categorizeLinuxLogLine(line, defaultCategory string)
 		}
 		return "SSH活动"
 	}
-	
+
 	// 账户相关
 	if strings.Contains(lineLower, "useradd") ||
-	   strings.Contains(lineLower, "userdel") ||
-	   strings.Contains(lineLower, "usermod") ||
-	   strings.Contains(lineLower, "passwd") {
+		strings.Contains(lineLower, "userdel") ||
+		strings.Contains(lineLower, "usermod") ||
+		strings.Contains(lineLower, "passwd") {
 		return "账户变更"
 	}
-	
+
 	return defaultCategory
 }
 
 // generateLinuxEventSummary 生成Linux事件摘要
 func (c *SecurityCollector) generateLinuxEventSummary(line, eventType, user string) string {
 	lineLower := strings.ToLower(line)
-	
+
 	// SSH登录
 	if strings.Contains(lineLower, "accepted") && strings.Contains(lineLower, "ssh") {
 		ip := c.extractIPAddress(line)
@@ -1641,7 +1641,7 @@ func (c *SecurityCollector) generateLinuxEventSummary(line, eventType, user stri
 		}
 		return "SSH登录成功"
 	}
-	
+
 	// SSH登录失败
 	if strings.Contains(lineLower, "failed password") || strings.Contains(lineLower, "invalid user") {
 		ip := c.extractIPAddress(line)
@@ -1652,7 +1652,7 @@ func (c *SecurityCollector) generateLinuxEventSummary(line, eventType, user stri
 		}
 		return "SSH登录失败"
 	}
-	
+
 	// 会话开启/关闭
 	if strings.Contains(lineLower, "session opened") {
 		if user != "" {
@@ -1666,7 +1666,7 @@ func (c *SecurityCollector) generateLinuxEventSummary(line, eventType, user stri
 		}
 		return "会话关闭"
 	}
-	
+
 	// sudo
 	if strings.Contains(lineLower, "sudo") {
 		// 提取执行的命令
@@ -1686,7 +1686,7 @@ func (c *SecurityCollector) generateLinuxEventSummary(line, eventType, user stri
 		}
 		return "sudo活动"
 	}
-	
+
 	// 默认：返回事件类型
 	if user != "" {
 		return fmt.Sprintf("%s: 用户 %s", eventType, user)
@@ -1741,10 +1741,10 @@ func (c *SecurityCollector) getLinuxJournalSecurityLogs(ctx context.Context, cut
 			if t, err := c.extractTimestamp(line); err == nil {
 				timestamp = t
 			}
-			
+
 			// 提取用户
 			user := c.extractUser(line)
-			
+
 			// 生成事件摘要
 			eventType := c.categorizeLinuxLogLine(line, unitInfo.category)
 			eventSummary := c.generateLinuxEventSummary(line, eventType, user)
@@ -1762,7 +1762,7 @@ func (c *SecurityCollector) getLinuxJournalSecurityLogs(ctx context.Context, cut
 					"source":     "journalctl",
 				},
 			}
-			
+
 			// 提取IP地址
 			if ip := c.extractIPAddress(line); ip != "" {
 				entry.Details["ip_address"] = ip
@@ -1810,13 +1810,13 @@ func (c *SecurityCollector) getDarwinUnifiedSecurityLogs(ctx context.Context, cu
 	// 使用 process 过滤 loginwindow，只获取关键的登录/解锁事件
 	// 精确匹配关键事件：屏幕锁定开始、解锁、Shield窗口状态、会话状态变更
 	predicate := `process == "loginwindow" AND (eventMessage CONTAINS "startScreenLock" OR eventMessage CONTAINS "LWScreenLock" OR eventMessage CONTAINS "unlock" OR eventMessage CONTAINS "Unlock" OR eventMessage CONTAINS "Shield window" OR eventMessage CONTAINS "ShieldWindow" OR eventMessage CONTAINS "sessionState" OR eventMessage CONTAINS "Session state" OR eventMessage CONTAINS "loginIsComplete" OR eventMessage CONTAINS "DisplayDidWake" OR eventMessage CONTAINS "DisplayWillSleep")`
-	
+
 	cmd := exec.CommandContext(queryCtx, "log", "show", "--predicate", predicate, "--last", lastTime, "--style", "syslog")
 	output, err := cmd.Output()
-	
+
 	// 用于去重：同一秒内同一事件类型只保留一条
 	seenEvents := make(map[string]bool)
-	
+
 	if err == nil {
 		lines := strings.Split(string(output), "\n")
 		for _, line := range lines {
@@ -1828,20 +1828,20 @@ func (c *SecurityCollector) getDarwinUnifiedSecurityLogs(ctx context.Context, cu
 			lineLower := strings.ToLower(line)
 			// 跳过应用程序相关的日志
 			if strings.Contains(lineLower, "checked in app") ||
-			   strings.Contains(lineLower, "applicationquit") ||
-			   strings.Contains(lineLower, "applicationlaunched") ||
-			   strings.Contains(lineLower, "persistentappssupport") ||
-			   strings.Contains(lineLower, "applicationmanager") {
+				strings.Contains(lineLower, "applicationquit") ||
+				strings.Contains(lineLower, "applicationlaunched") ||
+				strings.Contains(lineLower, "persistentappssupport") ||
+				strings.Contains(lineLower, "applicationmanager") {
 				continue
 			}
 			// 跳过一些不重要的内部日志
 			if strings.Contains(lineLower, "preheat") ||
-			   strings.Contains(lineLower, "placeholder") ||
-			   strings.Contains(lineLower, "avatar") ||
-			   strings.Contains(lineLower, "clock") ||
-			   strings.Contains(lineLower, "progress") ||
-			   strings.Contains(lineLower, "textfield") ||
-			   strings.Contains(lineLower, "button") {
+				strings.Contains(lineLower, "placeholder") ||
+				strings.Contains(lineLower, "avatar") ||
+				strings.Contains(lineLower, "clock") ||
+				strings.Contains(lineLower, "progress") ||
+				strings.Contains(lineLower, "textfield") ||
+				strings.Contains(lineLower, "button") {
 				continue
 			}
 
@@ -1850,15 +1850,15 @@ func (c *SecurityCollector) getDarwinUnifiedSecurityLogs(ctx context.Context, cu
 			if t, err := c.extractTimestamp(line); err == nil {
 				timestamp = t
 			}
-			
+
 			// 生成事件类型
 			eventType := c.categorizeDarwinLoginEvent(line)
-			
+
 			// 跳过空事件类型（不重要的内部事件）
 			if eventType == "" {
 				continue
 			}
-			
+
 			// 去重：同一秒内同一事件类型只保留一条
 			// 时间戳精确到秒 + 事件类型作为去重键
 			dedupeKey := timestamp.Format("2006-01-02T15:04:05") + "|" + eventType
@@ -1866,7 +1866,7 @@ func (c *SecurityCollector) getDarwinUnifiedSecurityLogs(ctx context.Context, cu
 				continue
 			}
 			seenEvents[dedupeKey] = true
-			
+
 			// 提取用户
 			user := c.extractUser(line)
 			// 尝试从日志中提取用户名
@@ -1876,7 +1876,7 @@ func (c *SecurityCollector) getDarwinUnifiedSecurityLogs(ctx context.Context, cu
 					user = matches[1]
 				}
 			}
-			
+
 			eventSummary := c.generateDarwinLoginEventSummary(line, eventType, user)
 
 			entry := core.LogEntry{
@@ -1915,10 +1915,10 @@ func (c *SecurityCollector) getDarwinSSHLogs(ctx context.Context, cutoffTime tim
 
 	// sshd 进程的日志
 	predicate := `process == "sshd" AND (eventMessage CONTAINS "Accepted" OR eventMessage CONTAINS "Failed" OR eventMessage CONTAINS "session opened" OR eventMessage CONTAINS "session closed" OR eventMessage CONTAINS "Connection from" OR eventMessage CONTAINS "Disconnected")`
-	
+
 	cmd := exec.CommandContext(queryCtx, "log", "show", "--predicate", predicate, "--last", lastTime, "--style", "syslog")
 	output, err := cmd.Output()
-	
+
 	if err == nil {
 		lines := strings.Split(string(output), "\n")
 		for _, line := range lines {
@@ -1930,7 +1930,7 @@ func (c *SecurityCollector) getDarwinSSHLogs(ctx context.Context, cutoffTime tim
 			if t, err := c.extractTimestamp(line); err == nil {
 				timestamp = t
 			}
-			
+
 			user := c.extractUser(line)
 			ip := c.extractIPAddress(line)
 			eventType := c.categorizeSSHEvent(line)
@@ -1988,10 +1988,10 @@ func (c *SecurityCollector) parseSSHLogFile(filePath string, cutoffTime time.Tim
 
 		// 只处理登录相关的日志
 		lineLower := strings.ToLower(line)
-		if !strings.Contains(lineLower, "accepted") && 
-		   !strings.Contains(lineLower, "failed") &&
-		   !strings.Contains(lineLower, "session opened") &&
-		   !strings.Contains(lineLower, "session closed") {
+		if !strings.Contains(lineLower, "accepted") &&
+			!strings.Contains(lineLower, "failed") &&
+			!strings.Contains(lineLower, "session opened") &&
+			!strings.Contains(lineLower, "session closed") {
 			continue
 		}
 
@@ -2032,12 +2032,12 @@ func (c *SecurityCollector) parseSSHLogFile(filePath string, cutoffTime time.Tim
 // categorizeDarwinLoginEvent 分类 macOS 登录事件
 func (c *SecurityCollector) categorizeDarwinLoginEvent(line string) string {
 	lineLower := strings.ToLower(line)
-	
+
 	// 屏幕锁定相关 - 只匹配明确的锁定开始事件
 	if strings.Contains(lineLower, "startscreenlock") {
 		return "屏幕锁定"
 	}
-	
+
 	// 屏幕解锁相关 - 只匹配明确的解锁事件
 	if strings.Contains(lineLower, "unlock") {
 		// 排除一些不相关的 unlock 日志
@@ -2046,37 +2046,37 @@ func (c *SecurityCollector) categorizeDarwinLoginEvent(line string) string {
 		}
 		return "屏幕解锁"
 	}
-	
+
 	// 登录完成
 	if strings.Contains(lineLower, "logincomplete") || strings.Contains(lineLower, "loginiscomplete") {
 		return "登录完成"
 	}
-	
+
 	// 会话状态变更 - 只保留重要的状态变更
 	if strings.Contains(lineLower, "sessionstate") || strings.Contains(lineLower, "session state") {
 		// 检查是否是重要的状态变更
 		if strings.Contains(lineLower, "active") || strings.Contains(lineLower, "inactive") ||
-		   strings.Contains(lineLower, "locked") || strings.Contains(lineLower, "unlocked") {
+			strings.Contains(lineLower, "locked") || strings.Contains(lineLower, "unlocked") {
 			return "会话状态变更"
 		}
 		return "" // 其他会话状态变更跳过
 	}
-	
+
 	// 显示唤醒 - 可能表示用户回来了
 	if strings.Contains(lineLower, "displaydidwake") {
 		return "显示器唤醒"
 	}
-	
+
 	// 显示休眠 - 可能表示用户离开了
 	if strings.Contains(lineLower, "displaywillsleep") {
 		return "显示器休眠"
 	}
-	
+
 	// Shield window 和 LWScreenLock 是内部状态，跳过
 	if strings.Contains(lineLower, "shield") || strings.Contains(lineLower, "lwscreenlock") {
 		return ""
 	}
-	
+
 	return "" // 其他事件跳过
 }
 
@@ -2091,7 +2091,7 @@ func (c *SecurityCollector) generateDarwinLoginEventSummary(line, eventType, use
 // categorizeSSHEvent 分类 SSH 事件
 func (c *SecurityCollector) categorizeSSHEvent(line string) string {
 	lineLower := strings.ToLower(line)
-	
+
 	if strings.Contains(lineLower, "accepted") {
 		if strings.Contains(lineLower, "publickey") {
 			return "SSH密钥登录成功"
@@ -2116,7 +2116,7 @@ func (c *SecurityCollector) categorizeSSHEvent(line string) string {
 	if strings.Contains(lineLower, "connection from") {
 		return "SSH连接请求"
 	}
-	
+
 	return "SSH活动"
 }
 
@@ -2137,7 +2137,7 @@ func (c *SecurityCollector) generateSSHEventSummary(line, eventType, user, ip st
 // generateDarwinEventSummary 生成macOS事件摘要
 func (c *SecurityCollector) generateDarwinEventSummary(line, eventType, user string) string {
 	lineLower := strings.ToLower(line)
-	
+
 	// 授权相关
 	if strings.Contains(lineLower, "authorization") {
 		if strings.Contains(lineLower, "succeeded") || strings.Contains(lineLower, "allowed") {
@@ -2153,7 +2153,7 @@ func (c *SecurityCollector) generateDarwinEventSummary(line, eventType, user str
 			return "授权失败"
 		}
 	}
-	
+
 	// TCC (隐私权限)
 	if strings.Contains(lineLower, "tcc") {
 		// 提取应用名
@@ -2163,7 +2163,7 @@ func (c *SecurityCollector) generateDarwinEventSummary(line, eventType, user str
 		}
 		return "隐私权限请求"
 	}
-	
+
 	// 沙盒
 	if strings.Contains(lineLower, "sandbox") {
 		if strings.Contains(lineLower, "deny") || strings.Contains(lineLower, "violation") {
@@ -2171,7 +2171,7 @@ func (c *SecurityCollector) generateDarwinEventSummary(line, eventType, user str
 		}
 		return "沙盒活动"
 	}
-	
+
 	// 防火墙
 	if strings.Contains(lineLower, "alf") || strings.Contains(lineLower, "firewall") {
 		if strings.Contains(lineLower, "allow") {
@@ -2182,7 +2182,7 @@ func (c *SecurityCollector) generateDarwinEventSummary(line, eventType, user str
 		}
 		return "防火墙活动"
 	}
-	
+
 	// 登录
 	if strings.Contains(lineLower, "login") {
 		if strings.Contains(lineLower, "success") {
@@ -2198,7 +2198,7 @@ func (c *SecurityCollector) generateDarwinEventSummary(line, eventType, user str
 			return "登录失败"
 		}
 	}
-	
+
 	// 默认
 	if user != "" {
 		return fmt.Sprintf("%s: 用户 %s", eventType, user)
@@ -2216,7 +2216,7 @@ func (c *SecurityCollector) extractTimestamp(line string) (time.Time, error) {
 			return t.Local(), nil
 		}
 	}
-	
+
 	// ISO格式 (2024-01-15 10:30:45) - 假设是本地时间
 	isoRegex := regexp.MustCompile(`(\d{4}-\d{2}-\d{2})\s+(\d{2}:\d{2}:\d{2})`)
 	if matches := isoRegex.FindStringSubmatch(line); len(matches) == 3 {
@@ -2225,7 +2225,7 @@ func (c *SecurityCollector) extractTimestamp(line string) (time.Time, error) {
 			return t, nil
 		}
 	}
-	
+
 	// Syslog格式 (MMM dd HH:mm:ss) - 假设是本地时间
 	syslogRegex := regexp.MustCompile(`([A-Z][a-z]{2})\s+(\d{1,2})\s+(\d{2}:\d{2}:\d{2})`)
 	if matches := syslogRegex.FindStringSubmatch(line); len(matches) == 4 {
@@ -2234,22 +2234,22 @@ func (c *SecurityCollector) extractTimestamp(line string) (time.Time, error) {
 			return t, nil
 		}
 	}
-	
+
 	return time.Time{}, fmt.Errorf("no timestamp found")
 }
 
 // extractLogLevel 从日志行中提取日志级别
 func (c *SecurityCollector) extractLogLevel(line string) string {
 	lineLower := strings.ToLower(line)
-	
+
 	levels := []string{"debug", "info", "notice", "warning", "error", "critical", "alert", "emergency"}
-	
+
 	for _, level := range levels {
 		if strings.Contains(lineLower, level) {
 			return strings.Title(level)
 		}
 	}
-	
+
 	if strings.Contains(lineLower, "err") {
 		return "Error"
 	}
@@ -2259,7 +2259,7 @@ func (c *SecurityCollector) extractLogLevel(line string) string {
 	if strings.Contains(lineLower, "fail") {
 		return "Error"
 	}
-	
+
 	return "Info"
 }
 
@@ -2270,20 +2270,20 @@ func (c *SecurityCollector) extractEventID(line string) string {
 	if matches := eventIDRegex.FindStringSubmatch(line); len(matches) > 1 {
 		return matches[1]
 	}
-	
+
 	// 通用数字ID
 	genericIDRegex := regexp.MustCompile(`\b(\d{3,5})\b`)
 	if match := genericIDRegex.FindString(line); match != "" {
 		return match
 	}
-	
+
 	return ""
 }
 
 // extractDetails 从日志行中提取详细信息
 func (c *SecurityCollector) extractDetails(line string) map[string]string {
 	details := make(map[string]string)
-	
+
 	// 提取用户名
 	userRegex := regexp.MustCompile(`(?i)(?:for\s+user\s+([a-zA-Z0-9_-]+)|user[=:\s]+([a-zA-Z0-9_-]+)|for\s+([a-zA-Z0-9_-]+))`)
 	if matches := userRegex.FindStringSubmatch(line); len(matches) > 1 {
@@ -2294,25 +2294,25 @@ func (c *SecurityCollector) extractDetails(line string) map[string]string {
 			}
 		}
 	}
-	
+
 	// 提取IP地址
 	ipRegex := regexp.MustCompile(`\b(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\b`)
 	if match := ipRegex.FindString(line); match != "" {
 		details["ip_address"] = match
 	}
-	
+
 	// 提取进程名
 	processRegex := regexp.MustCompile(`([a-zA-Z0-9_-]+)\[\d+\]`)
 	if matches := processRegex.FindStringSubmatch(line); len(matches) > 1 {
 		details["process"] = matches[1]
 	}
-	
+
 	// 提取PID
 	pidRegex := regexp.MustCompile(`\[(\d+)\]`)
 	if matches := pidRegex.FindStringSubmatch(line); len(matches) > 1 {
 		details["pid"] = matches[1]
 	}
-	
+
 	return details
 }
 
@@ -2342,13 +2342,13 @@ func (c *SecurityCollector) parseLinuxLogLine(line, source string) (core.LogEntr
 
 	// 设置日志级别
 	entry.Level = c.extractLogLevel(line)
-	
+
 	// 设置消息
 	entry.Message = line
-	
+
 	// 提取事件ID
 	entry.EventID = c.extractEventID(line)
-	
+
 	// 提取详细信息
 	entry.Details = c.extractDetails(line)
 

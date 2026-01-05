@@ -36,15 +36,15 @@ func (p PrivilegeLevel) String() string {
 
 // PrivilegeInfo 权限信息
 type PrivilegeInfo struct {
-	Level       PrivilegeLevel `json:"level"`
-	Username    string         `json:"username"`
-	UserID      string         `json:"user_id"`
-	GroupID     string         `json:"group_id"`
-	Groups      []string       `json:"groups"`
-	IsAdmin     bool           `json:"is_admin"`
-	CanElevate  bool           `json:"can_elevate"`
-	Platform    Platform       `json:"platform"`
-	Details     map[string]string `json:"details"`
+	Level      PrivilegeLevel    `json:"level"`
+	Username   string            `json:"username"`
+	UserID     string            `json:"user_id"`
+	GroupID    string            `json:"group_id"`
+	Groups     []string          `json:"groups"`
+	IsAdmin    bool              `json:"is_admin"`
+	CanElevate bool              `json:"can_elevate"`
+	Platform   Platform          `json:"platform"`
+	Details    map[string]string `json:"details"`
 }
 
 // PrivilegeDetector 权限检测器接口
@@ -56,12 +56,12 @@ type PrivilegeDetector interface {
 
 // PrivilegeCheckResult 权限检查结果
 type PrivilegeCheckResult struct {
-	CollectorName   string         `json:"collector_name"`
-	RequiredLevel   PrivilegeLevel `json:"required_level"`
-	CurrentLevel    PrivilegeLevel `json:"current_level"`
-	CanRun          bool           `json:"can_run"`
-	Reason          string         `json:"reason"`
-	Recommendation  string         `json:"recommendation"`
+	CollectorName  string         `json:"collector_name"`
+	RequiredLevel  PrivilegeLevel `json:"required_level"`
+	CurrentLevel   PrivilegeLevel `json:"current_level"`
+	CanRun         bool           `json:"can_run"`
+	Reason         string         `json:"reason"`
+	Recommendation string         `json:"recommendation"`
 }
 
 // DefaultPrivilegeDetector 默认权限检测器
@@ -123,7 +123,7 @@ func (d *DefaultPrivilegeDetector) DetectPrivileges() (*PrivilegeInfo, error) {
 // detectWindowsPrivileges 检测Windows权限
 func (d *DefaultPrivilegeDetector) detectWindowsPrivileges(info *PrivilegeInfo) {
 	info.Details["platform"] = "windows"
-	
+
 	// 检查是否为管理员
 	// 在Windows上，UID为空或"S-1-5-32-544"表示管理员组
 	if info.UserID == "" {
@@ -133,7 +133,7 @@ func (d *DefaultPrivilegeDetector) detectWindowsPrivileges(info *PrivilegeInfo) 
 		// 简化的管理员检测：检查是否在管理员组中
 		for _, groupID := range info.Groups {
 			if strings.Contains(groupID, "S-1-5-32-544") || // Administrators group
-			   strings.Contains(groupID, "S-1-5-32-545") {  // Users group (for comparison)
+				strings.Contains(groupID, "S-1-5-32-545") { // Users group (for comparison)
 				if strings.Contains(groupID, "S-1-5-32-544") {
 					info.IsAdmin = true
 					info.Level = PrivilegeLevelAdmin
@@ -142,7 +142,7 @@ func (d *DefaultPrivilegeDetector) detectWindowsPrivileges(info *PrivilegeInfo) 
 				}
 			}
 		}
-		
+
 		if !info.IsAdmin {
 			info.Level = PrivilegeLevelUser
 			info.CanElevate = true // Windows用户通常可以通过UAC提升权限
@@ -156,7 +156,7 @@ func (d *DefaultPrivilegeDetector) detectWindowsPrivileges(info *PrivilegeInfo) 
 // detectLinuxPrivileges 检测Linux权限
 func (d *DefaultPrivilegeDetector) detectLinuxPrivileges(info *PrivilegeInfo) {
 	info.Details["platform"] = "linux"
-	
+
 	// 检查是否为root用户
 	if info.UserID == "0" {
 		info.Level = PrivilegeLevelSystem
@@ -172,7 +172,7 @@ func (d *DefaultPrivilegeDetector) detectLinuxPrivileges(info *PrivilegeInfo) {
 		// 将组ID转换为组名（简化处理）
 		for _, adminGroup := range adminGroups {
 			if groupID == "0" || // root group
-			   d.isInGroup(adminGroup) {
+				d.isInGroup(adminGroup) {
 				info.IsAdmin = true
 				info.Level = PrivilegeLevelAdmin
 				info.CanElevate = true
@@ -192,7 +192,7 @@ func (d *DefaultPrivilegeDetector) detectLinuxPrivileges(info *PrivilegeInfo) {
 // detectDarwinPrivileges 检测macOS权限
 func (d *DefaultPrivilegeDetector) detectDarwinPrivileges(info *PrivilegeInfo) {
 	info.Details["platform"] = "darwin"
-	
+
 	// 检查是否为root用户
 	if info.UserID == "0" {
 		info.Level = PrivilegeLevelSystem
@@ -219,7 +219,7 @@ func (d *DefaultPrivilegeDetector) detectDarwinPrivileges(info *PrivilegeInfo) {
 // detectGenericPrivileges 通用权限检测
 func (d *DefaultPrivilegeDetector) detectGenericPrivileges(info *PrivilegeInfo) {
 	info.Details["platform"] = "generic"
-	
+
 	// 基于UID的简单检测
 	if info.UserID == "0" {
 		info.Level = PrivilegeLevelSystem
@@ -303,9 +303,9 @@ func (d *DefaultPrivilegeDetector) CheckCollectorPrivileges(collector Collector)
 		result.Reason = "Sufficient privileges"
 		result.Recommendation = "Can run normally"
 	} else {
-		result.Reason = fmt.Sprintf("Insufficient privileges: required %s, current %s", 
+		result.Reason = fmt.Sprintf("Insufficient privileges: required %s, current %s",
 			result.RequiredLevel, result.CurrentLevel)
-		
+
 		if currentPrivileges.CanElevate {
 			switch runtime.GOOS {
 			case "windows":
@@ -359,16 +359,16 @@ func GetRequiredPrivilegeLevel(collector Collector) PrivilegeLevel {
 // FormatPrivilegeInfo 格式化权限信息为可读字符串
 func FormatPrivilegeInfo(info *PrivilegeInfo) string {
 	var parts []string
-	
+
 	parts = append(parts, fmt.Sprintf("User: %s (%s)", info.Username, info.UserID))
 	parts = append(parts, fmt.Sprintf("Level: %s", info.Level))
 	parts = append(parts, fmt.Sprintf("Admin: %v", info.IsAdmin))
 	parts = append(parts, fmt.Sprintf("Can Elevate: %v", info.CanElevate))
 	parts = append(parts, fmt.Sprintf("Platform: %s", info.Platform))
-	
+
 	if len(info.Groups) > 0 {
 		parts = append(parts, fmt.Sprintf("Groups: %d", len(info.Groups)))
 	}
-	
+
 	return strings.Join(parts, ", ")
 }

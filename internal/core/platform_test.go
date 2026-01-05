@@ -44,7 +44,7 @@ func TestPlatformDetection(t *testing.T) {
 
 func TestGetPlatform(t *testing.T) {
 	platform := getPlatform()
-	
+
 	// 验证返回的平台字符串不为空
 	if platform == "" {
 		t.Error("getPlatform() should not return empty string")
@@ -59,7 +59,7 @@ func TestGetPlatform(t *testing.T) {
 			break
 		}
 	}
-	
+
 	if !found {
 		t.Errorf("getPlatform() returned unexpected platform: %s", platform)
 	}
@@ -87,27 +87,27 @@ func TestGetPlatform(t *testing.T) {
 
 func TestPlatformDetector(t *testing.T) {
 	detector := NewPlatformDetector()
-	
+
 	// 测试平台检测
 	platform := detector.DetectPlatform()
 	if platform == PlatformUnknown && runtime.GOOS != "unknown" {
 		t.Errorf("DetectPlatform() returned unknown for supported OS: %s", runtime.GOOS)
 	}
-	
+
 	// 测试平台信息获取
 	info, err := detector.GetPlatformInfo()
 	if err != nil {
 		t.Fatalf("GetPlatformInfo() failed: %v", err)
 	}
-	
+
 	if info.Platform != platform {
 		t.Errorf("Platform mismatch: detector=%v, info=%v", platform, info.Platform)
 	}
-	
+
 	if info.Architecture != runtime.GOARCH {
 		t.Errorf("Architecture mismatch: expected=%s, got=%s", runtime.GOARCH, info.Architecture)
 	}
-	
+
 	// 测试权限检查
 	_, err = detector.CheckPrivileges()
 	if err != nil {
@@ -117,7 +117,7 @@ func TestPlatformDetector(t *testing.T) {
 
 func TestPlatformCapabilities(t *testing.T) {
 	detector := NewPlatformDetector()
-	
+
 	// 测试平台特定功能
 	switch runtime.GOOS {
 	case "windows":
@@ -150,13 +150,13 @@ func TestPlatformCapabilities(t *testing.T) {
 
 func TestBasePlatformAdapter(t *testing.T) {
 	adapter := NewBasePlatformAdapter()
-	
+
 	// 测试平台检测器获取
 	detector := adapter.GetPlatformDetector()
 	if detector == nil {
 		t.Fatal("GetPlatformDetector() returned nil")
 	}
-	
+
 	// 测试权限错误处理
 	testErr := &CollectionError{
 		Module:    "test",
@@ -164,16 +164,16 @@ func TestBasePlatformAdapter(t *testing.T) {
 		Err:       errors.New("test error"),
 		Severity:  SeverityError,
 	}
-	
+
 	handledErr := adapter.HandlePrivilegeError(testErr.Err)
 	if handledErr == nil {
 		t.Fatal("HandlePrivilegeError() returned nil")
 	}
-	
+
 	if handledErr.Module != "privilege" {
 		t.Errorf("Expected module 'privilege', got '%s'", handledErr.Module)
 	}
-	
+
 	if handledErr.Severity != SeverityWarning {
 		t.Errorf("Expected severity warning, got %v", handledErr.Severity)
 	}
@@ -186,7 +186,7 @@ func TestCollectionError(t *testing.T) {
 		Err:       errors.New("test error"),
 		Severity:  SeverityError,
 	}
-	
+
 	errorStr := err.Error()
 	expectedPrefix := "[test_module] test_operation:"
 	if len(errorStr) < len(expectedPrefix) || errorStr[:len(expectedPrefix)] != expectedPrefix {
@@ -205,10 +205,10 @@ func TestErrorSeverity(t *testing.T) {
 		{SeverityCritical, "critical"},
 		{ErrorSeverity(999), "unknown"},
 	}
-	
+
 	for _, test := range tests {
 		if test.severity.String() != test.expected {
-			t.Errorf("Severity %d: expected '%s', got '%s'", 
+			t.Errorf("Severity %d: expected '%s', got '%s'",
 				test.severity, test.expected, test.severity.String())
 		}
 	}

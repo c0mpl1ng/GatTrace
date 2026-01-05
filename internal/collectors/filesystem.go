@@ -17,11 +17,11 @@ import (
 
 // FileSystemCollector 文件系统采集器
 type FileSystemCollector struct {
-	adapter              core.PlatformAdapter
-	days                 int // 采集时间范围（天数）
-	whitelistExtensions  map[string]bool
-	specialFiles         map[string]bool
-	importantHiddenDirs  map[string]bool
+	adapter             core.PlatformAdapter
+	days                int // 采集时间范围（天数）
+	whitelistExtensions map[string]bool
+	specialFiles        map[string]bool
+	importantHiddenDirs map[string]bool
 }
 
 // NewFileSystemCollector 创建文件系统采集器（默认7天）
@@ -142,7 +142,7 @@ func (c *FileSystemCollector) collectGenericFileSystemInfo(ctx context.Context) 
 	hostname, _ := core.GetSystemHostname()
 	platform := core.GetCurrentPlatform().String()
 	version := "1.0.0"
-	
+
 	metadata := core.NewMetadata(sessionID, hostname, platform, version)
 
 	fileSystemInfo := &core.FileSystemInfo{
@@ -163,31 +163,31 @@ func (c *FileSystemCollector) collectGenericFileSystemInfo(ctx context.Context) 
 // getRecentFiles 获取最近修改和访问的文件（全盘扫描）
 func (c *FileSystemCollector) getRecentFiles(ctx context.Context) ([]core.FileInfo, error) {
 	var files []core.FileInfo
-	
+
 	// 获取全盘扫描的根目录
 	rootDirectories := c.getRootDirectories()
 	skipDirectories := c.getSkipDirectories()
-	
+
 	// 只通过时间范围限制，移除文件数量限制
 	maxAge := time.Duration(c.days) * 24 * time.Hour
 	cutoffTime := time.Now().Add(-maxAge)
-	
+
 	for _, dir := range rootDirectories {
 		select {
 		case <-ctx.Done():
 			return files, ctx.Err()
 		default:
 		}
-		
+
 		// 全盘扫描目录
 		dirFiles, err := c.scanDirectoryFullDisk(ctx, dir, cutoffTime, skipDirectories)
 		if err != nil {
 			continue
 		}
-		
+
 		files = append(files, dirFiles...)
 	}
-	
+
 	return files, nil
 }
 
@@ -217,16 +217,16 @@ func (c *FileSystemCollector) getRootDirectories() []string {
 // getSkipDirectories 获取需要跳过的目录（避免扫描系统核心目录和虚拟文件系统）
 func (c *FileSystemCollector) getSkipDirectories() map[string]bool {
 	skipDirs := make(map[string]bool)
-	
+
 	switch runtime.GOOS {
 	case "windows":
 		// Windows 跳过的目录
 		skipDirs["C:\\$Recycle.Bin"] = true
 		skipDirs["C:\\System Volume Information"] = true
-		skipDirs["C:\\Windows\\WinSxS"] = true           // 组件存储，文件太多
-		skipDirs["C:\\Windows\\Installer"] = true        // 安装缓存
-		skipDirs["C:\\Windows\\assembly"] = true         // GAC
-		skipDirs["C:\\Windows\\Microsoft.NET"] = true    // .NET 框架
+		skipDirs["C:\\Windows\\WinSxS"] = true        // 组件存储，文件太多
+		skipDirs["C:\\Windows\\Installer"] = true     // 安装缓存
+		skipDirs["C:\\Windows\\assembly"] = true      // GAC
+		skipDirs["C:\\Windows\\Microsoft.NET"] = true // .NET 框架
 	case "linux":
 		// Linux 跳过的目录
 		skipDirs["/proc"] = true
@@ -246,14 +246,14 @@ func (c *FileSystemCollector) getSkipDirectories() map[string]bool {
 		skipDirs["/.Spotlight-V100"] = true
 		skipDirs["/.fseventsd"] = true
 	}
-	
+
 	return skipDirs
 }
 
 // buildWhitelistExtensions 构建白名单文件后缀 map
 func (c *FileSystemCollector) buildWhitelistExtensions() map[string]bool {
 	whitelist := make(map[string]bool, 150) // 预分配容量
-	
+
 	// 文档文件
 	docExtensions := []string{
 		".txt", ".md", ".markdown", ".rst", ".rtf",
@@ -262,7 +262,7 @@ func (c *FileSystemCollector) buildWhitelistExtensions() map[string]bool {
 		".ppt", ".pptx", ".odp",
 		".pdf",
 	}
-	
+
 	// 配置文件
 	configExtensions := []string{
 		".conf", ".config", ".cfg",
@@ -275,7 +275,7 @@ func (c *FileSystemCollector) buildWhitelistExtensions() map[string]bool {
 		".plist",
 		".reg",
 	}
-	
+
 	// 脚本文件
 	scriptExtensions := []string{
 		".sh", ".bash", ".zsh", ".fish", ".csh", ".ksh",
@@ -290,7 +290,7 @@ func (c *FileSystemCollector) buildWhitelistExtensions() map[string]bool {
 		".sed",
 		".vbs", ".vbe", ".wsf", ".wsh",
 	}
-	
+
 	// 编程语言源代码
 	codeExtensions := []string{
 		".c", ".h", ".cpp", ".cxx", ".cc", ".hpp", ".hxx", ".hh",
@@ -319,7 +319,7 @@ func (c *FileSystemCollector) buildWhitelistExtensions() map[string]bool {
 		".v",
 		".mk", ".make",
 	}
-	
+
 	// 数据/序列化文件
 	dataExtensions := []string{
 		".csv", ".tsv",
@@ -327,14 +327,14 @@ func (c *FileSystemCollector) buildWhitelistExtensions() map[string]bool {
 		".proto",
 		".avro", ".parquet",
 	}
-	
+
 	// 安全相关文件
 	securityExtensions := []string{
 		".pem", ".crt", ".cer", ".key", ".csr",
 		".pub",
 		".asc", ".gpg", ".pgp",
 	}
-	
+
 	// 合并所有后缀到白名单
 	allExtensions := [][]string{
 		docExtensions,
@@ -344,13 +344,13 @@ func (c *FileSystemCollector) buildWhitelistExtensions() map[string]bool {
 		dataExtensions,
 		securityExtensions,
 	}
-	
+
 	for _, extList := range allExtensions {
 		for _, ext := range extList {
 			whitelist[ext] = true
 		}
 	}
-	
+
 	return whitelist
 }
 
@@ -363,12 +363,12 @@ func (c *FileSystemCollector) getWhitelistExtensions() map[string]bool {
 func (c *FileSystemCollector) isWhitelistedFile(filePath string) bool {
 	// 获取文件扩展名
 	ext := strings.ToLower(filepath.Ext(filePath))
-	
+
 	// 检查扩展名是否在白名单中（使用缓存的 map）
 	if c.whitelistExtensions[ext] {
 		return true
 	}
-	
+
 	// 检查特殊文件名（无扩展名的重要文件，使用缓存的 map）
 	basename := strings.ToLower(filepath.Base(filePath))
 	return c.specialFiles[basename]
@@ -377,12 +377,12 @@ func (c *FileSystemCollector) isWhitelistedFile(filePath string) bool {
 // scanDirectoryFullDisk 全盘扫描目录获取最近修改或访问的文件
 func (c *FileSystemCollector) scanDirectoryFullDisk(ctx context.Context, dirPath string, cutoffTime time.Time, skipDirs map[string]bool) ([]core.FileInfo, error) {
 	var files []core.FileInfo
-	
+
 	// 检查目录是否存在
 	if _, err := os.Stat(dirPath); os.IsNotExist(err) {
 		return files, nil
 	}
-	
+
 	// 使用 filepath.WalkDir 替代 filepath.Walk（更高效，不需要每个文件都调用 os.Stat）
 	err := filepath.WalkDir(dirPath, func(path string, d os.DirEntry, err error) error {
 		// 检查上下文
@@ -391,11 +391,11 @@ func (c *FileSystemCollector) scanDirectoryFullDisk(ctx context.Context, dirPath
 			return ctx.Err()
 		default:
 		}
-		
+
 		if err != nil {
 			return nil // 跳过无法访问的文件/目录
 		}
-		
+
 		// 检查是否需要跳过此目录
 		if d.IsDir() {
 			if skipDirs[path] {
@@ -413,46 +413,46 @@ func (c *FileSystemCollector) scanDirectoryFullDisk(ctx context.Context, dirPath
 			}
 			return nil
 		}
-		
+
 		// 白名单过滤：只处理白名单中的文件类型（在获取 FileInfo 之前过滤，提高效率）
 		if !c.isWhitelistedFile(path) {
 			return nil
 		}
-		
+
 		// 只有通过白名单过滤后才获取完整的 FileInfo
 		info, err := d.Info()
 		if err != nil {
 			return nil
 		}
-		
+
 		// 获取文件的访问时间和修改时间
 		modTime := info.ModTime()
 		accessTime := getFileAccessTime(info) // 使用平台特定的实现
-		
+
 		// 检查文件修改时间或访问时间是否在时间范围内
 		modTimeInRange := modTime.After(cutoffTime)
 		accessTimeInRange := accessTime.After(cutoffTime)
-		
+
 		if !modTimeInRange && !accessTimeInRange {
 			return nil
 		}
-		
+
 		// 跳过过大的文件（保留这个限制以避免内存问题）
 		if info.Size() > 100*1024*1024 { // 100MB
 			return nil
 		}
-		
+
 		// 创建文件信息
 		fileInfo, err := c.createFileInfo(path, info, accessTime)
 		if err != nil {
 			return nil
 		}
-		
+
 		files = append(files, fileInfo)
-		
+
 		return nil
 	})
-	
+
 	return files, err
 }
 
@@ -466,19 +466,19 @@ func (c *FileSystemCollector) isExecutableFile(filePath string, info os.FileInfo
 	// 检查文件扩展名
 	ext := strings.ToLower(filepath.Ext(filePath))
 	executableExtensions := []string{
-		".exe", ".dll", ".so", ".dylib", ".app",  // 二进制可执行文件
-		".msi", ".com", ".scr",                    // Windows 可执行文件
-		".sys", ".drv", ".ocx", ".cpl",            // Windows 驱动和系统文件
-		".bin", ".elf",                            // Linux 可执行文件
-		".dmg", ".pkg",                            // macOS 安装包
+		".exe", ".dll", ".so", ".dylib", ".app", // 二进制可执行文件
+		".msi", ".com", ".scr", // Windows 可执行文件
+		".sys", ".drv", ".ocx", ".cpl", // Windows 驱动和系统文件
+		".bin", ".elf", // Linux 可执行文件
+		".dmg", ".pkg", // macOS 安装包
 	}
-	
+
 	for _, execExt := range executableExtensions {
 		if ext == execExt {
 			return true
 		}
 	}
-	
+
 	// 在 Unix 系统上，检查文件是否有可执行权限且是二进制文件
 	if runtime.GOOS == "linux" || runtime.GOOS == "darwin" {
 		// 检查是否有可执行权限
@@ -497,11 +497,9 @@ func (c *FileSystemCollector) isExecutableFile(filePath string, info os.FileInfo
 			}
 		}
 	}
-	
+
 	return false
 }
-
-
 
 // createFileInfo 创建文件信息
 func (c *FileSystemCollector) createFileInfo(filePath string, info os.FileInfo, accessTime time.Time) (core.FileInfo, error) {
@@ -513,17 +511,17 @@ func (c *FileSystemCollector) createFileInfo(filePath string, info os.FileInfo, 
 		AccessTime: accessTime.UTC(),
 		ChangeTime: info.ModTime().UTC(), // 大多数系统没有单独的 ctime
 	}
-	
+
 	// 获取文件所有者信息（使用平台特定的实现）
 	fileInfo.Owner, fileInfo.Group = getFileOwnership(info)
-	
+
 	// 计算文件哈希（仅对小文件）
 	if info.Size() < 10*1024*1024 { // 10MB以下的文件
 		if hash, err := c.calculateFileHash(filePath); err == nil {
 			fileInfo.Hash = hash
 		}
 	}
-	
+
 	return fileInfo, nil
 }
 
@@ -538,24 +536,24 @@ type FileSystemStat struct {
 // getFileSystemStat 获取文件系统特定统计信息
 func (c *FileSystemCollector) getFileSystemStat(filePath string) (*FileSystemStat, error) {
 	stat := &FileSystemStat{}
-	
+
 	info, err := os.Stat(filePath)
 	if err != nil {
 		return nil, err
 	}
-	
+
 	stat.AccessTime = info.ModTime()
 	stat.ChangeTime = info.ModTime()
 	stat.Owner = "unknown"
 	stat.Group = "unknown"
-	
+
 	switch runtime.GOOS {
 	case "linux", "darwin":
 		return c.getUnixFileSystemStat(filePath, stat)
 	case "windows":
 		return c.getWindowsFileSystemStat(filePath, stat)
 	}
-	
+
 	return stat, nil
 }
 
@@ -565,10 +563,10 @@ func (c *FileSystemCollector) getUnixFileSystemStat(filePath string, stat *FileS
 	if err != nil {
 		return stat, err
 	}
-	
+
 	stat.Owner, stat.Group = getFileOwnership(info)
 	stat.AccessTime = getFileAccessTime(info)
-	
+
 	return stat, nil
 }
 
@@ -584,7 +582,7 @@ func (c *FileSystemCollector) getWindowsFileSystemStat(filePath string, stat *Fi
 			stat.AccessTime = t
 		}
 	}
-	
+
 	stat.Owner = "Administrator"
 	stat.Group = "Administrators"
 	return stat, nil
@@ -599,10 +597,10 @@ func (c *FileSystemCollector) calculateFileHash(filePath string) (string, error)
 	defer file.Close()
 
 	hash := sha256.New()
-	
+
 	// 限制读取的数据量
 	limitedReader := io.LimitReader(file, 50*1024*1024) // 最多读取50MB
-	
+
 	if _, err := io.Copy(hash, limitedReader); err != nil {
 		return "", err
 	}
@@ -614,37 +612,37 @@ func (c *FileSystemCollector) calculateFileHash(filePath string) (string, error)
 func (c *FileSystemCollector) isInterestingFile(filePath string) bool {
 	// 可执行文件
 	executableExtensions := []string{".exe", ".dll", ".so", ".dylib", ".app"}
-	
+
 	// 配置文件
 	configExtensions := []string{".conf", ".config", ".ini", ".yaml", ".yml", ".json", ".xml"}
-	
+
 	// 脚本文件
 	scriptExtensions := []string{".sh", ".bash", ".ps1", ".py", ".pl", ".rb", ".bat", ".cmd"}
-	
+
 	ext := strings.ToLower(filepath.Ext(filePath))
-	
+
 	allExtensions := append(executableExtensions, configExtensions...)
 	allExtensions = append(allExtensions, scriptExtensions...)
-	
+
 	for _, interestingExt := range allExtensions {
 		if ext == interestingExt {
 			return true
 		}
 	}
-	
+
 	// 检查特殊文件名
 	basename := strings.ToLower(filepath.Base(filePath))
 	interestingNames := []string{
 		"hosts", "passwd", "shadow", "sudoers", "crontab",
 		"authorized_keys", "known_hosts", "id_rsa", "id_dsa",
 	}
-	
+
 	for _, name := range interestingNames {
 		if basename == name || strings.Contains(basename, name) {
 			return true
 		}
 	}
-	
+
 	// 检查可执行目录中的文件
 	executableDirs := []string{"/bin", "/sbin", "/usr/bin", "/usr/sbin", "/usr/local/bin"}
 	dir := filepath.Dir(filePath)
@@ -653,6 +651,6 @@ func (c *FileSystemCollector) isInterestingFile(filePath string) bool {
 			return true
 		}
 	}
-	
+
 	return false
 }

@@ -255,7 +255,7 @@ func TestOutputConsistencyProperty(t *testing.T) {
 			// 创建两个相同配置的应用程序实例
 			tempDir1 := t.TempDir()
 			tempDir2 := t.TempDir()
-			
+
 			outputDir1 := filepath.Join(tempDir1, "output1")
 			outputDir2 := filepath.Join(tempDir2, "output2")
 

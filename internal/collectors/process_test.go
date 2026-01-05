@@ -239,7 +239,7 @@ func TestProcessCollector_ProcessFiltering(t *testing.T) {
 	// 验证进程信息的基本字段
 	foundInit := false
 	foundSshd := false
-	
+
 	for _, proc := range processInfo.Processes {
 		if proc.Name == "init" && proc.PID == 1 {
 			foundInit = true

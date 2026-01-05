@@ -44,14 +44,14 @@ type NetworkPortSnapshot struct {
 
 // SystemStateComparison 系统状态比较结果
 type SystemStateComparison struct {
-	StartSnapshot    *SystemSnapshot `json:"start_snapshot"`
-	EndSnapshot      *SystemSnapshot `json:"end_snapshot"`
-	ProcessChanges   ProcessChanges  `json:"process_changes"`
-	NetworkChanges   NetworkChanges  `json:"network_changes"`
-	FileChanges      FileChanges     `json:"file_changes"`
+	StartSnapshot      *SystemSnapshot    `json:"start_snapshot"`
+	EndSnapshot        *SystemSnapshot    `json:"end_snapshot"`
+	ProcessChanges     ProcessChanges     `json:"process_changes"`
+	NetworkChanges     NetworkChanges     `json:"network_changes"`
+	FileChanges        FileChanges        `json:"file_changes"`
 	EnvironmentChanges EnvironmentChanges `json:"environment_changes"`
-	WorkingDirChanged bool            `json:"working_dir_changed"`
-	HasChanges       bool            `json:"has_changes"`
+	WorkingDirChanged  bool               `json:"working_dir_changed"`
+	HasChanges         bool               `json:"has_changes"`
 }
 
 // ProcessChanges 进程变更
@@ -155,16 +155,16 @@ func (sm *SystemMonitor) CompareSnapshots() (*SystemStateComparison, error) {
 
 	// 比较进程
 	comparison.ProcessChanges = sm.compareProcesses()
-	
+
 	// 比较网络端口
 	comparison.NetworkChanges = sm.compareNetworkPorts()
-	
+
 	// 比较文件
 	comparison.FileChanges = sm.compareFiles()
-	
+
 	// 比较环境变量
 	comparison.EnvironmentChanges = sm.compareEnvironment()
-	
+
 	// 比较工作目录
 	comparison.WorkingDirChanged = sm.startSnapshot.WorkingDir != sm.endSnapshot.WorkingDir
 
@@ -298,7 +298,7 @@ func (sm *SystemMonitor) captureTCPPorts(ctx context.Context, snapshot *SystemSn
 	// 这里简化实现，实际应该使用更详细的网络连接获取方法
 	// 由于gopsutil的net包在某些平台上可能有权限问题，我们使用基本的端口检测
 	commonPorts := []int{22, 23, 25, 53, 80, 110, 143, 443, 993, 995, 3389, 5432, 3306}
-	
+
 	for _, port := range commonPorts {
 		select {
 		case <-ctx.Done():
@@ -326,7 +326,7 @@ func (sm *SystemMonitor) captureTCPPorts(ctx context.Context, snapshot *SystemSn
 func (sm *SystemMonitor) captureUDPPorts(ctx context.Context, snapshot *SystemSnapshot) error {
 	// UDP端口检测更复杂，这里简化处理
 	commonUDPPorts := []int{53, 67, 68, 123, 161, 162}
-	
+
 	for _, port := range commonUDPPorts {
 		select {
 		case <-ctx.Done():
@@ -387,7 +387,7 @@ func (sm *SystemMonitor) calculateFileHash(filePath string) (string, error) {
 func (sm *SystemMonitor) captureEnvironmentVars(snapshot *SystemSnapshot) {
 	// 只捕获关键的环境变量，避免敏感信息
 	keyEnvVars := []string{"PATH", "HOME", "USER", "USERNAME", "COMPUTERNAME", "HOSTNAME"}
-	
+
 	for _, key := range keyEnvVars {
 		if value := os.Getenv(key); value != "" {
 			snapshot.EnvironmentVars[key] = value
@@ -434,17 +434,17 @@ func (sm *SystemMonitor) processesEqual(p1, p2 ProcessSnapshot) bool {
 	if p1.Name != p2.Name || p1.Username != p2.Username || p1.Status != p2.Status {
 		return false
 	}
-	
+
 	if len(p1.Cmdline) != len(p2.Cmdline) {
 		return false
 	}
-	
+
 	for i, cmd := range p1.Cmdline {
 		if cmd != p2.Cmdline[i] {
 			return false
 		}
 	}
-	
+
 	return true
 }
 

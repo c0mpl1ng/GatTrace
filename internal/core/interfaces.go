@@ -62,7 +62,7 @@ type Collector interface {
 type PlatformAdapter interface {
 	// 平台信息
 	GetPlatformDetector() PlatformDetector
-	
+
 	// 数据采集方法
 	GetNetworkInfo() (*NetworkInfo, error)
 	GetProcessInfo() (*ProcessInfo, error)
@@ -72,7 +72,7 @@ type PlatformAdapter interface {
 	GetSecurityLogs() (*SecurityLogs, error)
 	GetSystemInfo() (*SystemInfo, error)
 	GetSystemStatus() (*SystemStatus, error)
-	
+
 	// 权限和错误处理
 	CheckRequiredPrivileges(collector Collector) error
 	HandlePrivilegeError(err error) *CollectionError

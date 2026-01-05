@@ -60,7 +60,7 @@ func (c *ProcessCollector) Collect(ctx context.Context) (*core.CollectionResult,
 			Severity:  core.SeverityError,
 		}
 		errors = append(errors, collectionErr)
-		
+
 		// 如果平台适配器失败，尝试使用通用方法
 		processInfo, err = c.collectGenericProcessInfo()
 		if err != nil {
@@ -88,7 +88,7 @@ func (c *ProcessCollector) collectGenericProcessInfo() (*core.ProcessInfo, error
 	hostname, _ := core.GetSystemHostname()
 	platform := core.GetCurrentPlatform().String()
 	version := "1.0.0"
-	
+
 	metadata := core.NewMetadata(sessionID, hostname, platform, version)
 
 	processInfo := &core.ProcessInfo{
@@ -152,7 +152,7 @@ func (c *ProcessCollector) getProcessInfo(proc *process.Process) (core.Process, 
 	// 获取可执行文件路径
 	if exe, err := proc.Exe(); err == nil {
 		processInfo.Exe = exe
-		
+
 		// 计算可执行文件哈希
 		if hash, err := c.calculateFileHash(exe); err == nil {
 			processInfo.ExeHash = hash
@@ -198,7 +198,7 @@ func (c *ProcessCollector) getFullCmdline(proc *process.Process) string {
 	if cmdline, err := proc.Cmdline(); err == nil && cmdline != "" {
 		return cmdline
 	}
-	
+
 	// 如果 gopsutil 失败，尝试使用 ps 命令
 	return c.getCmdlineFromPS(proc.Pid)
 }
@@ -211,7 +211,7 @@ func (c *ProcessCollector) getCmdlineFromPS(pid int32) string {
 	if err != nil {
 		return ""
 	}
-	
+
 	cmdline := strings.TrimSpace(string(output))
 	return cmdline
 }

@@ -20,7 +20,7 @@ func TestVersionConsistencyProperty(t *testing.T) {
 	t.Run("VersionConsistencyProperty", func(t *testing.T) {
 		for i := 0; i < iterations; i++ {
 			version := fmt.Sprintf("v1.%d.%d", i/10, i%10)
-			
+
 			// 创建临时输出目录
 			tempDir := t.TempDir()
 			outputDir := filepath.Join(tempDir, fmt.Sprintf("version-test-%d", i))
@@ -121,7 +121,7 @@ func verifyVersionConsistency(outputDir, expectedVersion string, iteration int, 
 
 	// 验证两个文件中的版本信息一致
 	if collectorVersion != manifestVersion {
-		return fmt.Errorf("version inconsistency between files: meta.json has %s, manifest.json has %s", 
+		return fmt.Errorf("version inconsistency between files: meta.json has %s, manifest.json has %s",
 			collectorVersion, manifestVersion)
 	}
 
@@ -159,10 +159,10 @@ func verifyVersionFormat(version string, iteration int, t *testing.T) error {
 
 	// 验证版本不包含非法字符
 	for _, char := range version {
-		if !((char >= '0' && char <= '9') || 
-			 (char >= 'a' && char <= 'z') || 
-			 (char >= 'A' && char <= 'Z') || 
-			 char == '.' || char == '-' || char == '_' || char == 'v') {
+		if !((char >= '0' && char <= '9') ||
+			(char >= 'a' && char <= 'z') ||
+			(char >= 'A' && char <= 'Z') ||
+			char == '.' || char == '-' || char == '_' || char == 'v') {
 			return fmt.Errorf("version contains invalid character: %c in %s", char, version)
 		}
 	}
@@ -180,7 +180,7 @@ func verifyVersionInAllOutputs(outputDir, expectedVersion string, iteration int,
 	}
 
 	htmlStr := string(htmlContent)
-	
+
 	// 检查HTML中是否包含版本信息
 	if !strings.Contains(htmlStr, expectedVersion) {
 		return fmt.Errorf("version %s not found in HTML output", expectedVersion)
@@ -227,7 +227,7 @@ func TestVersionImmutabilityProperty(t *testing.T) {
 	t.Run("VersionImmutabilityProperty", func(t *testing.T) {
 		for i := 0; i < iterations; i++ {
 			version := fmt.Sprintf("v2.%d.%d", i/10, i%10)
-			
+
 			// 创建应用程序实例
 			app := NewApplication(version)
 
@@ -263,7 +263,7 @@ func TestVersionMetadataProperty(t *testing.T) {
 	t.Run("VersionMetadataProperty", func(t *testing.T) {
 		for i := 0; i < iterations; i++ {
 			version := fmt.Sprintf("v3.%d.%d", i/10, i%10)
-			
+
 			// 创建会话管理器
 			sessionManager, err := NewSessionManager(version)
 			if err != nil {
@@ -274,7 +274,7 @@ func TestVersionMetadataProperty(t *testing.T) {
 			// 验证会话管理器中的版本信息
 			metadata := sessionManager.GetMetadata()
 			if metadata.CollectorVersion != version {
-				t.Errorf("Iteration %d: Version mismatch in session metadata: expected %s, got %s", 
+				t.Errorf("Iteration %d: Version mismatch in session metadata: expected %s, got %s",
 					i, version, metadata.CollectorVersion)
 			}
 

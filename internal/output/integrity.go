@@ -31,7 +31,7 @@ func NewIntegrityManager(outputDir string, sessionManager *core.SessionManager) 
 // CalculateFileHash 计算单个文件的 SHA256 哈希
 func (im *IntegrityManager) CalculateFileHash(filename string) (string, error) {
 	filePath := filepath.Join(im.outputDir, filename)
-	
+
 	file, err := os.Open(filePath)
 	if err != nil {
 		return "", fmt.Errorf("failed to open file %s: %w", filename, err)
@@ -45,7 +45,7 @@ func (im *IntegrityManager) CalculateFileHash(filename string) (string, error) {
 
 	hash := fmt.Sprintf("%x", hasher.Sum(nil))
 	im.fileHashes[filename] = hash
-	
+
 	return hash, nil
 }
 
@@ -96,7 +96,7 @@ func (im *IntegrityManager) CreateManifest() error {
 
 	// 创建清单条目
 	var entries []core.ManifestEntry
-	
+
 	// 按文件名排序以确保一致性
 	var filenames []string
 	for filename := range im.fileHashes {
@@ -106,7 +106,7 @@ func (im *IntegrityManager) CreateManifest() error {
 
 	for _, filename := range filenames {
 		hash := im.fileHashes[filename]
-		
+
 		// 获取文件大小
 		filePath := filepath.Join(im.outputDir, filename)
 		fileInfo, err := os.Stat(filePath)
@@ -144,7 +144,7 @@ func (im *IntegrityManager) CreateManifest() error {
 
 	// 写入清单文件
 	jsonSerializer := NewJSONSerializer(im.outputDir, true)
-	
+
 	// 临时写入清单文件以计算其哈希
 	if err := jsonSerializer.WriteJSON("manifest.json", manifest); err != nil {
 		return fmt.Errorf("failed to write manifest file: %w", err)
@@ -170,7 +170,7 @@ func (im *IntegrityManager) CreateManifest() error {
 // calculateManifestHash 计算清单文件的哈希
 func (im *IntegrityManager) calculateManifestHash() (string, error) {
 	manifestPath := filepath.Join(im.outputDir, "manifest.json")
-	
+
 	file, err := os.Open(manifestPath)
 	if err != nil {
 		return "", fmt.Errorf("failed to open manifest file: %w", err)
@@ -210,7 +210,7 @@ func (im *IntegrityManager) VerifyIntegrity() error {
 		}
 
 		if currentHash != expectedHash {
-			return fmt.Errorf("integrity check failed for %s: expected %s, got %s", 
+			return fmt.Errorf("integrity check failed for %s: expected %s, got %s",
 				filename, expectedHash, currentHash)
 		}
 	}

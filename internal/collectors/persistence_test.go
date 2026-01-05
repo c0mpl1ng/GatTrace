@@ -238,7 +238,7 @@ func TestPersistenceCollector_PlatformSpecific(t *testing.T) {
 
 	// 验证根据当前平台返回了相应的持久化项目
 	hasExpectedItems := false
-	
+
 	switch runtime.GOOS {
 	case "windows":
 		// Windows应该有注册表和服务项目

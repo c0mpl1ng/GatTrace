@@ -81,10 +81,10 @@ func generateSessionID() (string, error) {
 	if _, err := rand.Read(bytes); err != nil {
 		return "", err
 	}
-	
+
 	// 添加时间戳确保唯一性
 	timestamp := time.Now().Unix()
-	
+
 	return fmt.Sprintf("%x-%d", bytes, timestamp), nil
 }
 
@@ -102,4 +102,3 @@ func GetSystemHostname() (string, error) {
 func GetCurrentPlatform() Platform {
 	return NewPlatformDetector().DetectPlatform()
 }
-

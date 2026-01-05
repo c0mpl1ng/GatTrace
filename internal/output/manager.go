@@ -10,10 +10,10 @@ import (
 
 // Manager 输出管理器实现
 type Manager struct {
-	outputDir         string
-	sessionManager    *core.SessionManager
-	jsonSerializer    *JSONSerializer
-	integrityManager  *IntegrityManager
+	outputDir        string
+	sessionManager   *core.SessionManager
+	jsonSerializer   *JSONSerializer
+	integrityManager *IntegrityManager
 }
 
 // NewManager 创建新的输出管理器
@@ -25,10 +25,10 @@ func NewManager(outputDir string) (*Manager, error) {
 	integrityManager := NewIntegrityManager(outputDir, nil)
 
 	return &Manager{
-		outputDir:         outputDir,
-		sessionManager:    nil, // 暂时设为nil，后续通过SetSessionManager设置
-		jsonSerializer:    jsonSerializer,
-		integrityManager:  integrityManager,
+		outputDir:        outputDir,
+		sessionManager:   nil, // 暂时设为nil，后续通过SetSessionManager设置
+		jsonSerializer:   jsonSerializer,
+		integrityManager: integrityManager,
 	}, nil
 }
 
@@ -52,17 +52,17 @@ func (m *Manager) WriteJSON(filename string, data interface{}) error {
 // GenerateHTML 生成 HTML 报告
 func (m *Manager) GenerateHTML() error {
 	htmlGenerator := NewHTMLGenerator(m.outputDir)
-	
+
 	// 验证嵌入的资源文件
 	if err := htmlGenerator.ValidateAssets(); err != nil {
 		return fmt.Errorf("HTML assets validation failed: %w", err)
 	}
-	
+
 	// 生成HTML报告
 	if err := htmlGenerator.GenerateReport(); err != nil {
 		return fmt.Errorf("HTML report generation failed: %w", err)
 	}
-	
+
 	return nil
 }
 
@@ -84,7 +84,7 @@ func (m *Manager) EnsureOutputDir() error {
 // WriteMetaFile 写入元数据文件
 func (m *Manager) WriteMetaFile() error {
 	metadata := m.sessionManager.GetMetadata()
-	
+
 	// 创建元数据结构
 	metaData := struct {
 		core.Metadata

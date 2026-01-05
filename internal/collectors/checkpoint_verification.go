@@ -193,10 +193,10 @@ func (cv *CheckpointVerification) validateMetadata(data interface{}) bool {
 
 // VerificationReport 验证报告
 type VerificationReport struct {
-	TotalCollectors int                                       `json:"total_collectors"`
-	PassedTests     int                                       `json:"passed_tests"`
-	FailedTests     int                                       `json:"failed_tests"`
-	Results         map[string]*CollectorVerificationResult  `json:"results"`
+	TotalCollectors int                                     `json:"total_collectors"`
+	PassedTests     int                                     `json:"passed_tests"`
+	FailedTests     int                                     `json:"failed_tests"`
+	Results         map[string]*CollectorVerificationResult `json:"results"`
 }
 
 // CollectorVerificationResult 采集器验证结果

@@ -26,7 +26,7 @@ func TestIntegrityManager_CalculateFileHash(t *testing.T) {
 	testContent := "test file content for hash calculation"
 	testFile := "test.txt"
 	testPath := filepath.Join(tempDir, testFile)
-	
+
 	err = os.WriteFile(testPath, []byte(testContent), 0644)
 	if err != nil {
 		t.Fatalf("Failed to create test file: %v", err)
@@ -290,8 +290,8 @@ func TestProperty_ManifestIntegrity(t *testing.T) {
 
 		// 简单验证清单文件包含必要字段
 		manifestStr := string(manifestData)
-		return len(manifestStr) > 0 && 
-			   len(manifestStr) > 100 // 清单文件应该有合理的大小
+		return len(manifestStr) > 0 &&
+			len(manifestStr) > 100 // 清单文件应该有合理的大小
 	}
 
 	// 运行属性测试

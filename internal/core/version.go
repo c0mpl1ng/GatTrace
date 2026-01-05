@@ -9,11 +9,11 @@ import (
 func ValidateSemanticVersion(version string) error {
 	// 语义化版本正则表达式 (vX.Y.Z 或 X.Y.Z 格式)
 	semverRegex := regexp.MustCompile(`^v?(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$`)
-	
+
 	if !semverRegex.MatchString(version) {
 		return fmt.Errorf("version '%s' does not follow semantic versioning format (e.g., v1.0.0)", version)
 	}
-	
+
 	return nil
 }
 

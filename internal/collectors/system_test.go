@@ -338,7 +338,7 @@ func TestSystemCollector_PlatformSpecific(t *testing.T) {
 
 	// 测试不同平台的支持
 	platforms := collector.SupportedPlatforms()
-	
+
 	expectedPlatforms := map[core.Platform]bool{
 		core.PlatformWindows: true,
 		core.PlatformLinux:   true,
@@ -372,9 +372,9 @@ func TestSystemCollector_NTPStatusHandling(t *testing.T) {
 	collector := NewSystemCollector(adapter)
 
 	testCases := []struct {
-		name         string
-		ntpStatus    *core.NTPStatus
-		expectError  bool
+		name        string
+		ntpStatus   *core.NTPStatus
+		expectError bool
 	}{
 		{
 			name: "Synchronized NTP",

@@ -45,7 +45,7 @@ func TestReadOnlyOperationGuarantee(t *testing.T) {
 
 		// 创建系统监控器来验证只读操作
 		monitor := NewSystemMonitor()
-		
+
 		// 捕获开始快照
 		if err := monitor.CaptureStartSnapshot(ctx); err != nil {
 			t.Logf("Failed to capture start snapshot: %v", err)
@@ -54,7 +54,7 @@ func TestReadOnlyOperationGuarantee(t *testing.T) {
 
 		// 运行应用程序
 		err = app.Run(ctx, tempDir, verbose)
-		
+
 		// 捕获结束快照
 		if err := monitor.CaptureEndSnapshot(ctx); err != nil {
 			t.Logf("Failed to capture end snapshot: %v", err)
@@ -160,12 +160,12 @@ func verifyNoServiceCreation(t *testing.T, comparison *SystemStateComparison) bo
 func isSystemServiceProcess(process ProcessSnapshot) bool {
 	// 检查进程名称是否包含服务相关关键词
 	serviceKeywords := []string{"service", "daemon", "svc", "systemd"}
-	
+
 	for _, keyword := range serviceKeywords {
 		if containsStringReadOnly(process.Name, keyword) {
 			return true
 		}
-		
+
 		for _, cmd := range process.Cmdline {
 			if containsStringReadOnly(cmd, keyword) {
 				return true
@@ -199,7 +199,7 @@ func verifyNoSystemModification(t *testing.T, comparison *SystemStateComparison)
 func isSystemLevelProcess(process ProcessSnapshot) bool {
 	// 检查是否以系统用户身份运行
 	systemUsers := []string{"root", "SYSTEM", "NT AUTHORITY\\SYSTEM"}
-	
+
 	for _, user := range systemUsers {
 		if process.Username == user {
 			return true
@@ -238,7 +238,7 @@ func verifyOutputDirectoryIsolationReadOnly(t *testing.T, outputDir string) bool
 
 	// 检查输出目录中是否有预期的文件
 	expectedFiles := []string{"meta.json", "manifest.json", "index.html"}
-	
+
 	for _, expectedFile := range expectedFiles {
 		filePath := filepath.Join(outputDir, expectedFile)
 		if _, err := os.Stat(filePath); os.IsNotExist(err) {
@@ -252,12 +252,12 @@ func verifyOutputDirectoryIsolationReadOnly(t *testing.T, outputDir string) bool
 
 // containsStringReadOnly 检查字符串是否包含子字符串（不区分大小写）
 func containsStringReadOnly(s, substr string) bool {
-	return len(s) >= len(substr) && 
-		   (s == substr || 
-		    len(s) > len(substr) && 
-		    (s[:len(substr)] == substr || 
-		     s[len(s)-len(substr):] == substr ||
-		     containsSubstring(s, substr)))
+	return len(s) >= len(substr) &&
+		(s == substr ||
+			len(s) > len(substr) &&
+				(s[:len(substr)] == substr ||
+					s[len(s)-len(substr):] == substr ||
+					containsSubstring(s, substr)))
 }
 
 // containsSubstring 检查字符串中是否包含子字符串
@@ -315,7 +315,7 @@ func TestReadOnlyOperationGuaranteeSpecificCases(t *testing.T) {
 
 			// 创建系统监控器
 			monitor := NewSystemMonitor()
-			
+
 			// 捕获开始快照
 			if err := monitor.CaptureStartSnapshot(ctx); err != nil {
 				t.Fatalf("Failed to capture start snapshot: %v", err)
@@ -323,7 +323,7 @@ func TestReadOnlyOperationGuaranteeSpecificCases(t *testing.T) {
 
 			// 运行应用程序
 			err = app.Run(ctx, tempDir, tc.verbose)
-			
+
 			if tc.expectError && err == nil {
 				t.Error("Expected error but got none")
 			} else if !tc.expectError && err != nil {
@@ -353,7 +353,7 @@ func TestReadOnlyOperationGuaranteeSpecificCases(t *testing.T) {
 func BenchmarkReadOnlyOperationGuarantee(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-		
+
 		// 创建临时输出目录
 		tempDir, err := os.MkdirTemp("", "GatTrace_readonly_bench_*")
 		if err != nil {
@@ -365,7 +365,7 @@ func BenchmarkReadOnlyOperationGuarantee(b *testing.B) {
 
 		// 创建系统监控器
 		monitor := NewSystemMonitor()
-		
+
 		// 捕获开始快照
 		if err := monitor.CaptureStartSnapshot(ctx); err != nil {
 			b.Fatalf("Failed to capture start snapshot: %v", err)
@@ -373,7 +373,7 @@ func BenchmarkReadOnlyOperationGuarantee(b *testing.B) {
 
 		// 运行应用程序
 		_ = app.Run(ctx, tempDir, false)
-		
+
 		// 捕获结束快照
 		if err := monitor.CaptureEndSnapshot(ctx); err != nil {
 			b.Fatalf("Failed to capture end snapshot: %v", err)

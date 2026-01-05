@@ -56,7 +56,7 @@ func (c *PersistenceCollector) Collect(ctx context.Context) (*core.CollectionRes
 			Severity:  core.SeverityError,
 		}
 		errors = append(errors, collectionErr)
-		
+
 		// 如果平台适配器失败，尝试使用通用方法
 		persistenceInfo, err = c.collectGenericPersistenceInfo()
 		if err != nil {
@@ -84,7 +84,7 @@ func (c *PersistenceCollector) collectGenericPersistenceInfo() (*core.Persistenc
 	hostname, _ := core.GetSystemHostname()
 	platform := core.GetCurrentPlatform().String()
 	version := "1.0.0"
-	
+
 	metadata := core.NewMetadata(sessionID, hostname, platform, version)
 
 	persistenceInfo := &core.PersistenceInfo{
@@ -315,7 +315,7 @@ func (c *PersistenceCollector) getSystemdServices() ([]core.PersistenceItem, err
 				User:    "root",
 				Enabled: true, // 简化实现，实际应该检查服务状态
 				Properties: map[string]string{
-					"location": "systemd",
+					"location":     "systemd",
 					"service_type": "system",
 				},
 			}

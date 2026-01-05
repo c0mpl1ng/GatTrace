@@ -15,7 +15,7 @@ import (
 func TestJSONSerializer_WriteJSON(t *testing.T) {
 	// 创建临时目录
 	tempDir := t.TempDir()
-	
+
 	serializer := NewJSONSerializer(tempDir, true)
 
 	// 创建测试数据

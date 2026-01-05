@@ -48,7 +48,7 @@ func TestOutputDirectoryIsolation(t *testing.T) {
 
 		// 创建文件系统监控器
 		fsMonitor := NewFileSystemMonitor()
-		
+
 		// 设置监控范围（排除输出目录）
 		if err := fsMonitor.SetupMonitoring(baseDir, outputDir); err != nil {
 			t.Logf("Failed to setup filesystem monitoring: %v", err)
@@ -93,12 +93,12 @@ type FileSystemMonitor struct {
 
 // FileState 文件状态
 type FileState struct {
-	Path     string    `json:"path"`
-	Size     int64     `json:"size"`
-	ModTime  time.Time `json:"mod_time"`
-	Hash     string    `json:"hash"`
-	IsDir    bool      `json:"is_dir"`
-	Exists   bool      `json:"exists"`
+	Path    string    `json:"path"`
+	Size    int64     `json:"size"`
+	ModTime time.Time `json:"mod_time"`
+	Hash    string    `json:"hash"`
+	IsDir   bool      `json:"is_dir"`
+	Exists  bool      `json:"exists"`
 }
 
 // NewFileSystemMonitor 创建新的文件系统监控器
@@ -113,13 +113,13 @@ func NewFileSystemMonitor() *FileSystemMonitor {
 func (fsm *FileSystemMonitor) SetupMonitoring(baseDir, excludeDir string) error {
 	// 设置监控的关键系统路径
 	fsm.monitoredPaths = getSystemMonitorPaths()
-	
+
 	// 添加基础目录到监控路径
 	fsm.monitoredPaths = append(fsm.monitoredPaths, baseDir)
-	
+
 	// 设置排除路径
 	fsm.excludedPaths = []string{excludeDir}
-	
+
 	return nil
 }
 
@@ -240,19 +240,19 @@ func (fsm *FileSystemMonitor) shouldSkipFile(filePath string) bool {
 	// 跳过某些类型的文件以提高性能
 	skipExtensions := []string{".log", ".tmp", ".cache", ".lock", ".pid"}
 	skipDirs := []string{"/.git/", "/node_modules/", "/.cache/", "/tmp/"}
-	
+
 	for _, ext := range skipExtensions {
 		if strings.HasSuffix(filePath, ext) {
 			return true
 		}
 	}
-	
+
 	for _, dir := range skipDirs {
 		if strings.Contains(filePath, dir) {
 			return true
 		}
 	}
-	
+
 	return false
 }
 
@@ -382,7 +382,7 @@ func verifyOutputDirectoryIsolation(t *testing.T, fsMonitor *FileSystemMonitor, 
 func isParentDirectoryOfOutput(filePath, outputDir string) bool {
 	absFilePath, err1 := filepath.Abs(filePath)
 	absOutputDir, err2 := filepath.Abs(outputDir)
-	
+
 	if err1 != nil || err2 != nil {
 		return false
 	}
@@ -395,7 +395,7 @@ func isParentDirectoryOfOutput(filePath, outputDir string) bool {
 		}
 		outputParent = filepath.Dir(outputParent)
 	}
-	
+
 	return false
 }
 
@@ -403,7 +403,7 @@ func isParentDirectoryOfOutput(filePath, outputDir string) bool {
 func isWithinDirectory(filePath, dirPath string) bool {
 	absFilePath, err1 := filepath.Abs(filePath)
 	absDirPath, err2 := filepath.Abs(dirPath)
-	
+
 	if err1 != nil || err2 != nil {
 		// 如果无法获取绝对路径，使用字符串比较
 		return strings.HasPrefix(filePath, dirPath)
@@ -422,19 +422,19 @@ func sanitizeDirectoryName(name string) string {
 	// 移除不安全的字符
 	unsafe := []string{"/", "\\", ":", "*", "?", "\"", "<", ">", "|", "\x00"}
 	result := name
-	
+
 	for _, char := range unsafe {
 		result = strings.ReplaceAll(result, char, "_")
 	}
-	
+
 	// 限制长度
 	if len(result) > 50 {
 		result = result[:50]
 	}
-	
+
 	// 移除前后空格
 	result = strings.TrimSpace(result)
-	
+
 	return result
 }
 
@@ -479,7 +479,7 @@ func TestOutputDirectoryIsolationSpecificCases(t *testing.T) {
 
 			// 创建文件系统监控器
 			fsMonitor := NewFileSystemMonitor()
-			
+
 			// 设置监控
 			if err := fsMonitor.SetupMonitoring(baseDir, outputDir); err != nil {
 				t.Fatalf("Failed to setup monitoring: %v", err)
@@ -615,7 +615,7 @@ func TestOutputDirectoryIsolationEdgeCases(t *testing.T) {
 func BenchmarkOutputDirectoryIsolation(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-		
+
 		// 创建临时目录
 		baseDir, err := os.MkdirTemp("", "GatTrace_isolation_bench_*")
 		if err != nil {

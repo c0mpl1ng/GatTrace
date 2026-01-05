@@ -44,13 +44,13 @@ func (js *JSONSerializer) WriteJSON(filename string, data interface{}) error {
 	// 序列化数据
 	var jsonData []byte
 	var err error
-	
+
 	if js.pretty {
 		jsonData, err = json.MarshalIndent(data, "", "  ")
 	} else {
 		jsonData, err = json.Marshal(data)
 	}
-	
+
 	if err != nil {
 		return fmt.Errorf("failed to marshal JSON: %w", err)
 	}
@@ -67,7 +67,7 @@ func (js *JSONSerializer) WriteJSON(filename string, data interface{}) error {
 // validateMetadata 验证数据包含标准元数据字段
 func (js *JSONSerializer) validateMetadata(data interface{}) error {
 	v := reflect.ValueOf(data)
-	
+
 	// 处理指针
 	if v.Kind() == reflect.Ptr {
 		if v.IsNil() {
@@ -94,23 +94,23 @@ func (js *JSONSerializer) validateMetadata(data interface{}) error {
 
 	// 验证 Metadata 字段的必需子字段
 	metadata := metadataField.Interface().(core.Metadata)
-	
+
 	if metadata.SessionID == "" {
 		return fmt.Errorf("metadata.SessionID cannot be empty")
 	}
-	
+
 	if metadata.Hostname == "" {
 		return fmt.Errorf("metadata.Hostname cannot be empty")
 	}
-	
+
 	if metadata.Platform == "" {
 		return fmt.Errorf("metadata.Platform cannot be empty")
 	}
-	
+
 	if metadata.CollectorVersion == "" {
 		return fmt.Errorf("metadata.CollectorVersion cannot be empty")
 	}
-	
+
 	if metadata.CollectedAt.IsZero() {
 		return fmt.Errorf("metadata.CollectedAt cannot be zero")
 	}
@@ -138,7 +138,7 @@ func (js *JSONSerializer) validateJSONStructure(data interface{}) error {
 // ValidateJSONFile 验证 JSON 文件的有效性
 func (js *JSONSerializer) ValidateJSONFile(filename string) error {
 	filePath := filepath.Join(js.outputDir, filename)
-	
+
 	data, err := os.ReadFile(filePath)
 	if err != nil {
 		return fmt.Errorf("failed to read file: %w", err)

@@ -55,7 +55,7 @@ func (c *NetworkCollector) Collect(ctx context.Context) (*core.CollectionResult,
 			Severity:  core.SeverityError,
 		}
 		errors = append(errors, collectionErr)
-		
+
 		// 如果平台适配器失败，尝试使用通用方法
 		networkInfo, err = c.collectGenericNetworkInfo()
 		if err != nil {
@@ -83,7 +83,7 @@ func (c *NetworkCollector) collectGenericNetworkInfo() (*core.NetworkInfo, error
 	hostname, _ := core.GetSystemHostname()
 	platform := core.GetCurrentPlatform().String()
 	version := "1.0.0" // 使用硬编码版本，稍后从配置获取
-	
+
 	metadata := core.NewMetadata(sessionID, hostname, platform, version)
 
 	networkInfo := &core.NetworkInfo{
@@ -272,6 +272,7 @@ func (c *NetworkCollector) getListeners() ([]core.Listener, error) {
 
 	return result, nil
 }
+
 // getProtocolString 将协议类型转换为字符串
 func getProtocolString(protocolType uint32) string {
 	switch protocolType {

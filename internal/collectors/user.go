@@ -57,7 +57,7 @@ func (c *UserCollector) Collect(ctx context.Context) (*core.CollectionResult, er
 			Severity:  core.SeverityError,
 		}
 		errors = append(errors, collectionErr)
-		
+
 		// 如果平台适配器失败，尝试使用通用方法
 		userInfo, err = c.collectGenericUserInfo()
 		if err != nil {
@@ -85,15 +85,15 @@ func (c *UserCollector) collectGenericUserInfo() (*core.UserInfo, error) {
 	hostname, _ := core.GetSystemHostname()
 	platform := core.GetCurrentPlatform().String()
 	version := "1.0.0"
-	
+
 	metadata := core.NewMetadata(sessionID, hostname, platform, version)
 
 	userInfo := &core.UserInfo{
-		Metadata:      metadata,
-		CurrentUsers:  []core.User{},
-		RecentLogins:  []core.LoginRecord{},
-		Privileges:    []core.Privilege{},
-		SSHKeys:       []core.SSHKey{},
+		Metadata:     metadata,
+		CurrentUsers: []core.User{},
+		RecentLogins: []core.LoginRecord{},
+		Privileges:   []core.Privilege{},
+		SSHKeys:      []core.SSHKey{},
 	}
 
 	// 获取当前用户信息
@@ -163,11 +163,11 @@ func (c *UserCollector) getRecentLogins() ([]core.LoginRecord, error) {
 	currentUser, err := user.Current()
 	if err == nil {
 		login := core.LoginRecord{
-			Username:   currentUser.Username,
-			Terminal:   "console",
-			Host:       "localhost",
-			LoginTime:  time.Now().Add(-time.Hour).UTC(),
-			Status:     "active",
+			Username:  currentUser.Username,
+			Terminal:  "console",
+			Host:      "localhost",
+			LoginTime: time.Now().Add(-time.Hour).UTC(),
+			Status:    "active",
 		}
 		logins = append(logins, login)
 	}
@@ -197,12 +197,12 @@ func (c *UserCollector) getPrivileges() ([]core.Privilege, error) {
 		for _, gid := range groupIds {
 			if group, err := user.LookupGroupId(gid); err == nil {
 				privilege.Groups = append(privilege.Groups, group.Name)
-				
+
 				// 检查是否为管理员组
 				if c.isAdminGroup(group.Name) {
 					privilege.Admin = true
 				}
-				
+
 				// 检查是否有sudo权限
 				if c.isSudoGroup(group.Name) {
 					privilege.Sudo = true
@@ -220,7 +220,7 @@ func (c *UserCollector) isAdminGroup(groupName string) bool {
 	adminGroups := []string{
 		"admin", "administrators", "wheel", "root", "sudo",
 	}
-	
+
 	groupLower := strings.ToLower(groupName)
 	for _, adminGroup := range adminGroups {
 		if groupLower == adminGroup {
@@ -235,7 +235,7 @@ func (c *UserCollector) isSudoGroup(groupName string) bool {
 	sudoGroups := []string{
 		"sudo", "wheel", "admin",
 	}
-	
+
 	groupLower := strings.ToLower(groupName)
 	for _, sudoGroup := range sudoGroups {
 		if groupLower == sudoGroup {
@@ -264,7 +264,7 @@ func (c *UserCollector) getSSHKeys() ([]core.SSHKey, error) {
 	// 查找SSH密钥文件
 	keyFiles := []string{
 		"id_rsa.pub",
-		"id_dsa.pub", 
+		"id_dsa.pub",
 		"id_ecdsa.pub",
 		"id_ed25519.pub",
 		"authorized_keys",

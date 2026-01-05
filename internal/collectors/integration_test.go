@@ -15,7 +15,7 @@ func TestAllCollectorsIntegration(t *testing.T) {
 	}
 
 	adapter := NewMockPlatformAdapter()
-	
+
 	// 创建所有采集器
 	collectors := []core.Collector{
 		NewNetworkCollector(adapter),
@@ -143,7 +143,7 @@ func TestCollectorPlatformSupport(t *testing.T) {
 			platforms := collector.SupportedPlatforms()
 
 			if len(platforms) != len(expectedPlatforms) {
-				t.Errorf("Collector %s should support %d platforms, got %d", 
+				t.Errorf("Collector %s should support %d platforms, got %d",
 					collector.Name(), len(expectedPlatforms), len(platforms))
 			}
 
@@ -199,7 +199,7 @@ func TestCollectorPrivilegeRequirements(t *testing.T) {
 
 			actual := collector.RequiresPrivileges()
 			if actual != expected {
-				t.Errorf("Collector %s privilege requirement mismatch: expected %v, got %v", 
+				t.Errorf("Collector %s privilege requirement mismatch: expected %v, got %v",
 					collector.Name(), expected, actual)
 			}
 		})
@@ -302,7 +302,7 @@ func TestCollectorDataConsistency(t *testing.T) {
 			// 验证多次采集的结构一致性
 			for i := 1; i < len(results); i++ {
 				if !compareDataStructures(results[0].Data, results[i].Data) {
-					t.Errorf("Collector %s collection %d data structure differs from first collection", 
+					t.Errorf("Collector %s collection %d data structure differs from first collection",
 						collector.Name(), i)
 				}
 			}

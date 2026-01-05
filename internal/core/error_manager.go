@@ -14,30 +14,30 @@ import (
 type ErrorCategory string
 
 const (
-	ErrorCategoryPrivilege    ErrorCategory = "privilege"
-	ErrorCategoryPlatform     ErrorCategory = "platform"
-	ErrorCategoryNetwork      ErrorCategory = "network"
-	ErrorCategoryFileSystem   ErrorCategory = "filesystem"
-	ErrorCategorySystem       ErrorCategory = "system"
-	ErrorCategoryData         ErrorCategory = "data"
-	ErrorCategoryTimeout      ErrorCategory = "timeout"
-	ErrorCategoryUnknown      ErrorCategory = "unknown"
+	ErrorCategoryPrivilege  ErrorCategory = "privilege"
+	ErrorCategoryPlatform   ErrorCategory = "platform"
+	ErrorCategoryNetwork    ErrorCategory = "network"
+	ErrorCategoryFileSystem ErrorCategory = "filesystem"
+	ErrorCategorySystem     ErrorCategory = "system"
+	ErrorCategoryData       ErrorCategory = "data"
+	ErrorCategoryTimeout    ErrorCategory = "timeout"
+	ErrorCategoryUnknown    ErrorCategory = "unknown"
 )
 
 // ErrorRecord 错误记录
 type ErrorRecord struct {
-	ID          string        `json:"id"`
-	Timestamp   time.Time     `json:"timestamp"`
-	Category    ErrorCategory `json:"category"`
-	Severity    ErrorSeverity `json:"severity"`
-	Module      string        `json:"module"`
-	Operation   string        `json:"operation"`
-	Message     string        `json:"message"`
-	Details     string        `json:"details,omitempty"`
-	StackTrace  string        `json:"stack_trace,omitempty"`
-	Context     map[string]string `json:"context,omitempty"`
-	Recovered   bool          `json:"recovered"`
-	RetryCount  int           `json:"retry_count"`
+	ID         string            `json:"id"`
+	Timestamp  time.Time         `json:"timestamp"`
+	Category   ErrorCategory     `json:"category"`
+	Severity   ErrorSeverity     `json:"severity"`
+	Module     string            `json:"module"`
+	Operation  string            `json:"operation"`
+	Message    string            `json:"message"`
+	Details    string            `json:"details,omitempty"`
+	StackTrace string            `json:"stack_trace,omitempty"`
+	Context    map[string]string `json:"context,omitempty"`
+	Recovered  bool              `json:"recovered"`
+	RetryCount int               `json:"retry_count"`
 }
 
 // ErrorManager 错误管理器
@@ -344,7 +344,7 @@ func (em *ErrorManager) SafeExecuteWithResult(module, operation string, fn func(
 // RetryWithBackoff 带退避的重试机制
 func (em *ErrorManager) RetryWithBackoff(ctx context.Context, module, operation string, maxRetries int, fn func() error) error {
 	var lastErr error
-	
+
 	for attempt := 0; attempt <= maxRetries; attempt++ {
 		// 检查上下文是否已取消
 		select {
@@ -359,7 +359,7 @@ func (em *ErrorManager) RetryWithBackoff(ctx context.Context, module, operation 
 		}
 
 		lastErr = err
-		
+
 		// 记录重试错误
 		collectionErr := &CollectionError{
 			Module:    module,
@@ -367,9 +367,9 @@ func (em *ErrorManager) RetryWithBackoff(ctx context.Context, module, operation 
 			Err:       err,
 			Severity:  SeverityWarning,
 		}
-		
+
 		errorID := em.RecordError(collectionErr)
-		
+
 		// 更新重试计数
 		em.mu.Lock()
 		for _, record := range em.errors {
@@ -386,7 +386,7 @@ func (em *ErrorManager) RetryWithBackoff(ctx context.Context, module, operation 
 			if backoffDuration > 30*time.Second {
 				backoffDuration = 30 * time.Second // 最大30秒
 			}
-			
+
 			select {
 			case <-ctx.Done():
 				return ctx.Err()
@@ -401,19 +401,19 @@ func (em *ErrorManager) RetryWithBackoff(ctx context.Context, module, operation 
 
 // ErrorSummary 错误摘要
 type ErrorSummary struct {
-	TotalErrors    int                        `json:"total_errors"`
-	CriticalErrors int                        `json:"critical_errors"`
-	ErrorErrors    int                        `json:"error_errors"`
-	WarningErrors  int                        `json:"warning_errors"`
-	InfoErrors     int                        `json:"info_errors"`
-	Categories     map[ErrorCategory]int      `json:"categories"`
+	TotalErrors    int                   `json:"total_errors"`
+	CriticalErrors int                   `json:"critical_errors"`
+	ErrorErrors    int                   `json:"error_errors"`
+	WarningErrors  int                   `json:"warning_errors"`
+	InfoErrors     int                   `json:"info_errors"`
+	Categories     map[ErrorCategory]int `json:"categories"`
 }
 
 // PrintSummary 打印错误摘要
 func (er *ErrorReport) PrintSummary() {
 	fmt.Println("=== 错误报告摘要 ===")
 	fmt.Printf("总错误数: %d\n", len(er.Errors))
-	
+
 	if len(er.Errors) == 0 {
 		fmt.Println("✅ 没有错误记录")
 		return
@@ -451,7 +451,7 @@ func (er *ErrorReport) PrintSummary() {
 	if len(er.Errors) < maxShow {
 		maxShow = len(er.Errors)
 	}
-	
+
 	for i := 0; i < maxShow; i++ {
 		err := er.Errors[i]
 		severityIcon := "ℹ️"
@@ -463,11 +463,11 @@ func (er *ErrorReport) PrintSummary() {
 		case SeverityWarning.String():
 			severityIcon = "⚠️"
 		}
-		
-		fmt.Printf("  %s [%s] %s: %s\n", 
+
+		fmt.Printf("  %s [%s] %s: %s\n",
 			severityIcon, err.Timestamp.Format("15:04:05"), err.Module, err.Error)
 	}
-	
+
 	if len(er.Errors) > maxShow {
 		fmt.Printf("  ... 还有 %d 个错误\n", len(er.Errors)-maxShow)
 	}

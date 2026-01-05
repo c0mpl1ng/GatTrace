@@ -115,11 +115,11 @@ func (d *DarwinAdapter) GetUserInfo() (*core.UserInfo, error) {
 	}
 
 	userInfo := &core.UserInfo{
-		Metadata:      sessionManager.GetMetadata(),
-		CurrentUsers:  []core.User{},
-		RecentLogins:  []core.LoginRecord{},
-		Privileges:    []core.Privilege{},
-		SSHKeys:       []core.SSHKey{},
+		Metadata:     sessionManager.GetMetadata(),
+		CurrentUsers: []core.User{},
+		RecentLogins: []core.LoginRecord{},
+		Privileges:   []core.Privilege{},
+		SSHKeys:      []core.SSHKey{},
 	}
 
 	// 获取当前用户
@@ -449,7 +449,7 @@ func (d *DarwinAdapter) getRoutes() ([]core.Route, error) {
 
 	routes := []core.Route{} // Initialize as empty slice instead of nil
 	lines := strings.Split(string(output), "\n")
-	
+
 	for _, line := range lines {
 		fields := strings.Fields(line)
 		if len(fields) >= 6 && !strings.HasPrefix(line, "Destination") {
@@ -639,7 +639,7 @@ func (d *DarwinAdapter) getUserHomeDir(username string) string {
 	if err != nil {
 		return "/Users/" + username
 	}
-	
+
 	lines := strings.Split(string(output), "\n")
 	for _, line := range lines {
 		if strings.HasPrefix(line, "NFSHomeDirectory:") {
@@ -649,7 +649,7 @@ func (d *DarwinAdapter) getUserHomeDir(username string) string {
 			}
 		}
 	}
-	
+
 	return "/Users/" + username
 }
 
@@ -660,7 +660,7 @@ func (d *DarwinAdapter) getUserShell(username string) string {
 	if err != nil {
 		return "/bin/bash"
 	}
-	
+
 	lines := strings.Split(string(output), "\n")
 	for _, line := range lines {
 		if strings.HasPrefix(line, "UserShell:") {
@@ -670,7 +670,7 @@ func (d *DarwinAdapter) getUserShell(username string) string {
 			}
 		}
 	}
-	
+
 	return "/bin/bash"
 }
 
@@ -755,14 +755,14 @@ func (d *DarwinAdapter) isCurrentUserAdmin() bool {
 	if err != nil {
 		return false
 	}
-	
+
 	groups := strings.Fields(string(output))
 	for _, group := range groups {
 		if group == "admin" {
 			return true
 		}
 	}
-	
+
 	return false
 }
 
@@ -909,7 +909,7 @@ func (d *DarwinAdapter) readPlistFile(filePath string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	
+
 	return string(output), nil
 }
 
@@ -997,9 +997,9 @@ func (d *DarwinAdapter) getRecentFiles() ([]core.FileInfo, error) {
 // scanDirectoryForRecentFiles 扫描目录获取最近文件
 func (d *DarwinAdapter) scanDirectoryForRecentFiles(dir string) ([]core.FileInfo, error) {
 	var files []core.FileInfo
-	const maxFiles = 10   // 进一步限制最大文件数
-	const maxDepth = 2    // 进一步限制最大深度
-	
+	const maxFiles = 10 // 进一步限制最大文件数
+	const maxDepth = 2  // 进一步限制最大深度
+
 	baseDepth := strings.Count(dir, string(os.PathSeparator))
 
 	err := filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
@@ -1024,7 +1024,7 @@ func (d *DarwinAdapter) scanDirectoryForRecentFiles(dir string) ([]core.FileInfo
 		// 只处理最近 7 天的文件
 		if !info.IsDir() && time.Since(info.ModTime()) < 7*24*time.Hour {
 			stat := info.Sys().(*syscall.Stat_t)
-			
+
 			fileInfo := core.FileInfo{
 				Path:       path,
 				Size:       info.Size(),
@@ -1060,23 +1060,23 @@ func (d *DarwinAdapter) getUnifiedLogs() ([]core.LogEntry, error) {
 
 	// 使用 log show 获取最近的日志 (减少时间范围以提高性能)
 	cmd := exec.Command("log", "show", "--last", "5m", "--predicate", "category == 'security'", "--style", "syslog")
-	
+
 	// 设置命令超时
 	cmd.WaitDelay = 3 * time.Second
-	
+
 	output, err := cmd.Output()
 	if err != nil {
 		return entries, nil // 权限不足或命令失败
 	}
 
 	lines := strings.Split(string(output), "\n")
-	
+
 	// 限制处理的日志行数
 	const maxLines = 50
 	if len(lines) > maxLines {
 		lines = lines[:maxLines]
 	}
-	
+
 	for _, line := range lines {
 		if strings.TrimSpace(line) != "" {
 			entry := core.LogEntry{
@@ -1123,7 +1123,7 @@ func (d *DarwinAdapter) parseLogFile(filePath, source string) ([]core.LogEntry, 
 	var entries []core.LogEntry
 	scanner := bufio.NewScanner(file)
 	lineCount := 0
-	
+
 	for scanner.Scan() && lineCount < 20 { // 进一步限制读取行数
 		line := scanner.Text()
 		if strings.TrimSpace(line) != "" {
@@ -1160,7 +1160,7 @@ func (d *DarwinAdapter) getNTPStatus() (string, error) {
 	if err == nil {
 		return "synchronized", nil
 	}
-	
+
 	return "unknown", nil
 }
 
@@ -1228,9 +1228,9 @@ func (d *DarwinAdapter) getDarwinNTPStatus() (*core.NTPStatus, error) {
 	// 使用 sntp 检查 NTP 状态
 	cmd := exec.Command("sntp", "-K", "/dev/null", "-t", "1", "time.apple.com")
 	err := cmd.Run()
-	
+
 	synchronized := err == nil
-	
+
 	return &core.NTPStatus{
 		Synchronized: synchronized,
 		Server:       "time.apple.com",
@@ -1280,10 +1280,10 @@ func (d *DarwinAdapter) getDarwinSystemIntegrity() (*core.SystemIntegrity, error
 	// 检查 System Integrity Protection (SIP) 状态
 	cmd := exec.Command("csrutil", "status")
 	output, err := cmd.Output()
-	
+
 	status := "unknown"
 	var issues []string
-	
+
 	if err == nil {
 		outputStr := string(output)
 		if strings.Contains(outputStr, "enabled") {

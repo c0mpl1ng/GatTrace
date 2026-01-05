@@ -8,7 +8,7 @@ import (
 
 func TestNewPlatformAdapter(t *testing.T) {
 	adapter, err := NewPlatformAdapter()
-	
+
 	switch runtime.GOOS {
 	case "windows", "linux", "darwin":
 		if err != nil {
@@ -65,7 +65,7 @@ func TestPlatformAdapterInterface(t *testing.T) {
 		if detector == nil {
 			t.Error("GetPlatformDetector() should not return nil")
 		}
-		
+
 		done <- true
 	}()
 

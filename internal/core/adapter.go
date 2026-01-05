@@ -26,16 +26,16 @@ func (a *BasePlatformAdapter) CheckRequiredPrivileges(collector Collector) error
 	if !collector.RequiresPrivileges() {
 		return nil
 	}
-	
+
 	hasPrivileges, err := a.detector.CheckPrivileges()
 	if err != nil {
 		return fmt.Errorf("failed to check privileges: %w", err)
 	}
-	
+
 	if !hasPrivileges {
 		return fmt.Errorf("collector %s requires elevated privileges", collector.Name())
 	}
-	
+
 	return nil
 }
 
@@ -53,13 +53,13 @@ func (a *BasePlatformAdapter) HandlePrivilegeError(err error) *CollectionError {
 func (a *BasePlatformAdapter) IsPlatformSupported(collector Collector) bool {
 	currentPlatform := a.detector.DetectPlatform()
 	supportedPlatforms := collector.SupportedPlatforms()
-	
+
 	for _, platform := range supportedPlatforms {
 		if platform == currentPlatform {
 			return true
 		}
 	}
-	
+
 	return false
 }
 

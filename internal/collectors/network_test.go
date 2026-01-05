@@ -12,15 +12,15 @@ import (
 // MockPlatformAdapter 用于测试的模拟平台适配器
 type MockPlatformAdapter struct {
 	*core.BasePlatformAdapter
-	networkInfo              *core.NetworkInfo
-	processInfo              *core.ProcessInfo
-	userInfo                 *core.UserInfo
-	persistenceInfo          *core.PersistenceInfo
-	fileSystemInfo           *core.FileSystemInfo
-	securityLogs             *core.SecurityLogs
-	systemStatus             *core.SystemStatus
-	shouldError              bool
-	shouldFailSystemStatus   bool
+	networkInfo            *core.NetworkInfo
+	processInfo            *core.ProcessInfo
+	userInfo               *core.UserInfo
+	persistenceInfo        *core.PersistenceInfo
+	fileSystemInfo         *core.FileSystemInfo
+	securityLogs           *core.SecurityLogs
+	systemStatus           *core.SystemStatus
+	shouldError            bool
+	shouldFailSystemStatus bool
 }
 
 func NewMockPlatformAdapter() *MockPlatformAdapter {
@@ -65,15 +65,15 @@ func (m *MockPlatformAdapter) GetNetworkInfo() (*core.NetworkInfo, error) {
 	if m.networkInfo != nil {
 		return m.networkInfo, nil
 	}
-	
+
 	// 返回默认的网络信息
 	sessionID, _ := core.NewSessionID()
 	hostname, _ := core.GetSystemHostname()
 	platform := core.GetCurrentPlatform().String()
 	version := "1.0.0"
-	
+
 	metadata := core.NewMetadata(sessionID, hostname, platform, version)
-	
+
 	return &core.NetworkInfo{
 		Metadata: metadata,
 		Interfaces: []core.NetworkInterface{
@@ -127,15 +127,15 @@ func (m *MockPlatformAdapter) GetProcessInfo() (*core.ProcessInfo, error) {
 	if m.processInfo != nil {
 		return m.processInfo, nil
 	}
-	
+
 	// 返回默认的进程信息
 	sessionID, _ := core.NewSessionID()
 	hostname, _ := core.GetSystemHostname()
 	platform := core.GetCurrentPlatform().String()
 	version := "1.0.0"
-	
+
 	metadata := core.NewMetadata(sessionID, hostname, platform, version)
-	
+
 	return &core.ProcessInfo{
 		Metadata: metadata,
 		Processes: []core.Process{
@@ -174,15 +174,15 @@ func (m *MockPlatformAdapter) GetUserInfo() (*core.UserInfo, error) {
 	if m.userInfo != nil {
 		return m.userInfo, nil
 	}
-	
+
 	// 返回默认的用户信息
 	sessionID, _ := core.NewSessionID()
 	hostname, _ := core.GetSystemHostname()
 	platform := core.GetCurrentPlatform().String()
 	version := "1.0.0"
-	
+
 	metadata := core.NewMetadata(sessionID, hostname, platform, version)
-	
+
 	return &core.UserInfo{
 		Metadata: metadata,
 		CurrentUsers: []core.User{
@@ -198,11 +198,11 @@ func (m *MockPlatformAdapter) GetUserInfo() (*core.UserInfo, error) {
 		},
 		RecentLogins: []core.LoginRecord{
 			{
-				Username:   "testuser",
-				Terminal:   "pts/0",
-				Host:       "192.168.1.100",
-				LoginTime:  time.Now().Add(-2 * time.Hour).UTC(),
-				Status:     "active",
+				Username:  "testuser",
+				Terminal:  "pts/0",
+				Host:      "192.168.1.100",
+				LoginTime: time.Now().Add(-2 * time.Hour).UTC(),
+				Status:    "active",
 			},
 		},
 		Privileges: []core.Privilege{
@@ -232,15 +232,15 @@ func (m *MockPlatformAdapter) GetPersistenceInfo() (*core.PersistenceInfo, error
 	if m.persistenceInfo != nil {
 		return m.persistenceInfo, nil
 	}
-	
+
 	// 返回默认的持久化信息
 	sessionID, _ := core.NewSessionID()
 	hostname, _ := core.GetSystemHostname()
 	platform := core.GetCurrentPlatform().String()
 	version := "1.0.0"
-	
+
 	metadata := core.NewMetadata(sessionID, hostname, platform, version)
-	
+
 	return &core.PersistenceInfo{
 		Metadata: metadata,
 		Items: []core.PersistenceItem{
@@ -252,7 +252,7 @@ func (m *MockPlatformAdapter) GetPersistenceInfo() (*core.PersistenceInfo, error
 				User:    "root",
 				Enabled: true,
 				Properties: map[string]string{
-					"location": "systemd",
+					"location":     "systemd",
 					"service_type": "system",
 				},
 			},
@@ -289,15 +289,15 @@ func (m *MockPlatformAdapter) GetFileSystemInfo() (*core.FileSystemInfo, error) 
 	if m.fileSystemInfo != nil {
 		return m.fileSystemInfo, nil
 	}
-	
+
 	// 返回默认的文件系统信息
 	sessionID, _ := core.NewSessionID()
 	hostname, _ := core.GetSystemHostname()
 	platform := core.GetCurrentPlatform().String()
 	version := "1.0.0"
-	
+
 	metadata := core.NewMetadata(sessionID, hostname, platform, version)
-	
+
 	return &core.FileSystemInfo{
 		Metadata: metadata,
 		RecentFiles: []core.FileInfo{
@@ -334,15 +334,15 @@ func (m *MockPlatformAdapter) GetSecurityLogs() (*core.SecurityLogs, error) {
 	if m.securityLogs != nil {
 		return m.securityLogs, nil
 	}
-	
+
 	// 返回默认的安全日志
 	sessionID, _ := core.NewSessionID()
 	hostname, _ := core.GetSystemHostname()
 	platform := core.GetCurrentPlatform().String()
 	version := "1.0.0"
-	
+
 	metadata := core.NewMetadata(sessionID, hostname, platform, version)
-	
+
 	return &core.SecurityLogs{
 		Metadata: metadata,
 		Entries: []core.LogEntry{
@@ -385,15 +385,15 @@ func (m *MockPlatformAdapter) GetSystemStatus() (*core.SystemStatus, error) {
 	if m.systemStatus != nil {
 		return m.systemStatus, nil
 	}
-	
+
 	// 返回默认的系统状态
 	sessionID, _ := core.NewSessionID()
 	hostname, _ := core.GetSystemHostname()
 	platform := core.GetCurrentPlatform().String()
 	version := "1.0.0"
-	
+
 	metadata := core.NewMetadata(sessionID, hostname, platform, version)
-	
+
 	return &core.SystemStatus{
 		Metadata: metadata,
 		BootTime: time.Now().Add(-2 * time.Hour),

@@ -30,7 +30,7 @@ func TestStandardTime_MarshalJSON(t *testing.T) {
 // TestStandardTime_UnmarshalJSON 测试标准时间的 JSON 反序列化
 func TestStandardTime_UnmarshalJSON(t *testing.T) {
 	jsonData := `"2024-01-04T12:00:00Z"`
-	
+
 	var st StandardTime
 	err := json.Unmarshal([]byte(jsonData), &st)
 	if err != nil {
@@ -107,7 +107,7 @@ func TestProperty_TimestampFormatConsistency(t *testing.T) {
 
 		// 尝试创建时间（可能失败，如 2月30日）
 		testTime := time.Date(year, time.Month(month), day, hour, minute, second, 0, time.UTC)
-		
+
 		// 如果日期无效，time.Date 会自动调整，我们检查是否还是原来的日期
 		if testTime.Year() != year || int(testTime.Month()) != month || testTime.Day() != day {
 			return true // 跳过无效日期
@@ -219,7 +219,7 @@ func TestProperty_FormatParseConsistency(t *testing.T) {
 
 		// 创建时间
 		original := time.Date(year, time.Month(month), day, hour, minute, second, 0, time.UTC)
-		
+
 		// 如果日期无效，跳过
 		if original.Year() != year || int(original.Month()) != month || original.Day() != day {
 			return true

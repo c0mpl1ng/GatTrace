@@ -8,15 +8,15 @@ import (
 
 // PrivilegeManager 权限管理器
 type PrivilegeManager struct {
-	detector    PrivilegeDetector
-	privileges  *PrivilegeInfo
-	checkCache  map[string]*PrivilegeCheckResult
+	detector   PrivilegeDetector
+	privileges *PrivilegeInfo
+	checkCache map[string]*PrivilegeCheckResult
 }
 
 // NewPrivilegeManager 创建权限管理器
 func NewPrivilegeManager() (*PrivilegeManager, error) {
 	detector := NewPrivilegeDetector()
-	
+
 	privileges, err := detector.DetectPrivileges()
 	if err != nil {
 		return nil, fmt.Errorf("failed to detect privileges: %w", err)
@@ -58,10 +58,10 @@ func (pm *PrivilegeManager) CheckAllCollectors(collectors []Collector) (*Privile
 		SystemPrivileges: pm.privileges,
 		CollectorChecks:  make([]*PrivilegeCheckResult, 0, len(collectors)),
 		Summary: &PrivilegeSummary{
-			TotalCollectors:      len(collectors),
-			CanRunCollectors:     0,
-			CannotRunCollectors:  0,
-			RequiresElevation:    0,
+			TotalCollectors:     len(collectors),
+			CanRunCollectors:    0,
+			CannotRunCollectors: 0,
+			RequiresElevation:   0,
 		},
 		GeneratedAt: NormalizeTimestamp(time.Now()),
 	}
@@ -194,10 +194,10 @@ type PrivilegeReport struct {
 
 // PrivilegeSummary 权限检查摘要
 type PrivilegeSummary struct {
-	TotalCollectors      int `json:"total_collectors"`
-	CanRunCollectors     int `json:"can_run_collectors"`
-	CannotRunCollectors  int `json:"cannot_run_collectors"`
-	RequiresElevation    int `json:"requires_elevation"`
+	TotalCollectors     int `json:"total_collectors"`
+	CanRunCollectors    int `json:"can_run_collectors"`
+	CannotRunCollectors int `json:"cannot_run_collectors"`
+	RequiresElevation   int `json:"requires_elevation"`
 }
 
 // PrintReport 打印权限报告
@@ -230,12 +230,12 @@ func (pr *PrivilegeReport) PrintReport() {
 		if !check.CanRun {
 			status = "❌"
 		}
-		
+
 		fmt.Printf("  %s %s\n", status, check.CollectorName)
 		fmt.Printf("    需要权限: %s\n", check.RequiredLevel)
 		fmt.Printf("    当前权限: %s\n", check.CurrentLevel)
 		fmt.Printf("    状态: %s\n", check.Reason)
-		
+
 		if !check.CanRun {
 			fmt.Printf("    建议: %s\n", check.Recommendation)
 		}
@@ -276,7 +276,7 @@ func (pm *PrivilegeManager) CanRunWithDegradation(collectors []Collector) bool {
 	if err != nil {
 		return false
 	}
-	
+
 	// 如果至少有一个采集器可以运行，就可以在降级模式下运行
 	return len(runnable) > 0
 }

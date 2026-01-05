@@ -97,13 +97,13 @@ func TestSessionUniquenessProperty(t *testing.T) {
 			for i := 0; i < 50; i++ {
 				go func(idx int) {
 					defer func() { done <- true }()
-					
+
 					sessionManager, err := NewSessionManager(fmt.Sprintf("concurrent-v1.0.%d", idx))
 					if err != nil {
 						t.Errorf("Concurrent iteration %d: Failed to create session manager: %v", idx, err)
 						return
 					}
-					
+
 					concurrentSessions <- sessionManager.GetSessionID()
 				}(i)
 			}
@@ -134,7 +134,7 @@ func sessionContainsTimestamp(sessionID string) bool {
 	// 检查是否包含连字符和数字
 	hasHyphen := false
 	hasDigits := false
-	
+
 	for _, char := range sessionID {
 		if char == '-' {
 			hasHyphen = true
@@ -143,7 +143,7 @@ func sessionContainsTimestamp(sessionID string) bool {
 			hasDigits = true
 		}
 	}
-	
+
 	return hasHyphen && hasDigits
 }
 

@@ -26,12 +26,12 @@ func NewMetadata(sessionID, hostname, platform, version string) Metadata {
 
 // NetworkInterface 网络接口信息
 type NetworkInterface struct {
-	Name      string   `json:"name"`
-	IPs       []string `json:"ips"`
-	MAC       string   `json:"mac"`
-	Status    string   `json:"status"`
-	MTU       int      `json:"mtu"`
-	Flags     []string `json:"flags"`
+	Name   string   `json:"name"`
+	IPs    []string `json:"ips"`
+	MAC    string   `json:"mac"`
+	Status string   `json:"status"`
+	MTU    int      `json:"mtu"`
+	Flags  []string `json:"flags"`
 }
 
 // Route 路由信息
@@ -79,17 +79,17 @@ type NetworkInfo struct {
 
 // Process 进程信息
 type Process struct {
-	PID         int32     `json:"pid"`
-	PPID        int32     `json:"ppid"`
-	Name        string    `json:"name"`
-	Cmdline     []string  `json:"cmdline"`
-	Exe         string    `json:"exe"`
-	Cwd         string    `json:"cwd"`
-	Username    string    `json:"username"`
-	CreateTime  time.Time `json:"create_time"`
-	Status      string    `json:"status"`
-	ExeHash     string    `json:"exe_hash"`
-	Signature   string    `json:"signature,omitempty"` // Windows only
+	PID        int32     `json:"pid"`
+	PPID       int32     `json:"ppid"`
+	Name       string    `json:"name"`
+	Cmdline    []string  `json:"cmdline"`
+	Exe        string    `json:"exe"`
+	Cwd        string    `json:"cwd"`
+	Username   string    `json:"username"`
+	CreateTime time.Time `json:"create_time"`
+	Status     string    `json:"status"`
+	ExeHash    string    `json:"exe_hash"`
+	Signature  string    `json:"signature,omitempty"` // Windows only
 }
 
 // ProcessInfo 进程信息结构
@@ -100,23 +100,23 @@ type ProcessInfo struct {
 
 // User 用户信息
 type User struct {
-	Username    string    `json:"username"`
-	UID         string    `json:"uid"`
-	GID         string    `json:"gid"`
-	HomeDir     string    `json:"home_dir"`
-	Shell       string    `json:"shell"`
-	LastLogin   time.Time `json:"last_login"`
-	IsActive    bool      `json:"is_active"`
+	Username  string    `json:"username"`
+	UID       string    `json:"uid"`
+	GID       string    `json:"gid"`
+	HomeDir   string    `json:"home_dir"`
+	Shell     string    `json:"shell"`
+	LastLogin time.Time `json:"last_login"`
+	IsActive  bool      `json:"is_active"`
 }
 
 // LoginRecord 登录记录
 type LoginRecord struct {
-	Username  string    `json:"username"`
-	Terminal  string    `json:"terminal"`
-	Host      string    `json:"host"`
-	LoginTime time.Time `json:"login_time"`
+	Username   string     `json:"username"`
+	Terminal   string     `json:"terminal"`
+	Host       string     `json:"host"`
+	LoginTime  time.Time  `json:"login_time"`
 	LogoutTime *time.Time `json:"logout_time,omitempty"`
-	Status    string    `json:"status"`
+	Status     string     `json:"status"`
 }
 
 // Privilege 权限信息
@@ -138,22 +138,22 @@ type SSHKey struct {
 
 // UserInfo 用户信息结构
 type UserInfo struct {
-	Metadata      Metadata      `json:"metadata"`
-	CurrentUsers  []User        `json:"current_users"`
-	RecentLogins  []LoginRecord `json:"recent_logins"`
-	Privileges    []Privilege   `json:"privileges"`
-	SSHKeys       []SSHKey      `json:"ssh_keys"`
+	Metadata     Metadata      `json:"metadata"`
+	CurrentUsers []User        `json:"current_users"`
+	RecentLogins []LoginRecord `json:"recent_logins"`
+	Privileges   []Privilege   `json:"privileges"`
+	SSHKeys      []SSHKey      `json:"ssh_keys"`
 }
 
 // PersistenceItem 持久化项目
 type PersistenceItem struct {
-	Type        string            `json:"type"`
-	Name        string            `json:"name"`
-	Path        string            `json:"path"`
-	Command     string            `json:"command"`
-	User        string            `json:"user"`
-	Enabled     bool              `json:"enabled"`
-	Properties  map[string]string `json:"properties"`
+	Type       string            `json:"type"`
+	Name       string            `json:"name"`
+	Path       string            `json:"path"`
+	Command    string            `json:"command"`
+	User       string            `json:"user"`
+	Enabled    bool              `json:"enabled"`
+	Properties map[string]string `json:"properties"`
 }
 
 // PersistenceInfo 持久化信息结构
@@ -164,21 +164,21 @@ type PersistenceInfo struct {
 
 // FileInfo 文件信息
 type FileInfo struct {
-	Path         string    `json:"path"`
-	Size         int64     `json:"size"`
-	Mode         string    `json:"mode"`
-	ModTime      time.Time `json:"mod_time"`
-	AccessTime   time.Time `json:"access_time"`
-	ChangeTime   time.Time `json:"change_time"`
-	Hash         string    `json:"hash"`
-	Owner        string    `json:"owner"`
-	Group        string    `json:"group"`
+	Path       string    `json:"path"`
+	Size       int64     `json:"size"`
+	Mode       string    `json:"mode"`
+	ModTime    time.Time `json:"mod_time"`
+	AccessTime time.Time `json:"access_time"`
+	ChangeTime time.Time `json:"change_time"`
+	Hash       string    `json:"hash"`
+	Owner      string    `json:"owner"`
+	Group      string    `json:"group"`
 }
 
 // FileSystemInfo 文件系统信息结构
 type FileSystemInfo struct {
-	Metadata     Metadata   `json:"metadata"`
-	RecentFiles  []FileInfo `json:"recent_files"`
+	Metadata    Metadata   `json:"metadata"`
+	RecentFiles []FileInfo `json:"recent_files"`
 }
 
 // LogEntry 日志条目
@@ -276,6 +276,6 @@ type Manifest struct {
 
 // SystemStateReport 系统状态报告结构
 type SystemStateReport struct {
-	Metadata   Metadata                `json:"metadata"`
-	Comparison *SystemStateComparison  `json:"comparison"`
+	Metadata   Metadata               `json:"metadata"`
+	Comparison *SystemStateComparison `json:"comparison"`
 }

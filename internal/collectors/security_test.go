@@ -263,11 +263,11 @@ func TestSecurityCollector_PlatformSpecific(t *testing.T) {
 		// 由于我们只收集登录/解锁事件，来源可能是 loginwindow 或 SSH
 		hasSystemLog := false
 		for _, entry := range securityLogs.Entries {
-			if strings.Contains(entry.Source, "system") || 
-			   strings.Contains(entry.Source, "com.apple") ||
-			   strings.Contains(entry.Source, "loginwindow") ||
-			   strings.Contains(entry.Source, "ssh") ||
-			   strings.Contains(entry.Source, "unified") {
+			if strings.Contains(entry.Source, "system") ||
+				strings.Contains(entry.Source, "com.apple") ||
+				strings.Contains(entry.Source, "loginwindow") ||
+				strings.Contains(entry.Source, "ssh") ||
+				strings.Contains(entry.Source, "unified") {
 				hasSystemLog = true
 				break
 			}
@@ -329,7 +329,7 @@ func TestSecurityCollector_TimestampExtraction(t *testing.T) {
 
 	for _, tc := range testCases {
 		timestamp, err := collector.extractTimestamp(tc.line)
-		
+
 		if tc.shouldParse {
 			if err != nil {
 				t.Errorf("Line '%s': should parse timestamp, got error: %v", tc.line, err)
@@ -408,7 +408,7 @@ func TestSecurityCollector_DetailsExtraction(t *testing.T) {
 
 	for _, tc := range testCases {
 		result := collector.extractDetails(tc.line)
-		
+
 		for key, expectedValue := range tc.expectedDetails {
 			if actualValue, exists := result[key]; !exists {
 				t.Errorf("Line '%s': missing expected detail '%s'", tc.line, key)
@@ -425,7 +425,7 @@ func TestSecurityCollector_LogParsing(t *testing.T) {
 	collector := NewSecurityCollector(adapter)
 
 	testLine := "Dec  1 10:30:45 hostname sshd[1234]: Failed password for user admin from 192.168.1.100"
-	
+
 	entry, err := collector.parseLinuxLogLine(testLine, "auth.log")
 	if err != nil {
 		t.Fatalf("parseLinuxLogLine should not return error: %v", err)
@@ -466,14 +466,13 @@ func TestSecurityCollector_LogParsing(t *testing.T) {
 	}
 }
 
-
 // getLogSources 获取日志条目的所有来源（用于调试）
 func getLogSources(entries []core.LogEntry) []string {
 	sources := make(map[string]bool)
 	for _, entry := range entries {
 		sources[entry.Source] = true
 	}
-	
+
 	result := make([]string, 0, len(sources))
 	for source := range sources {
 		result = append(result, source)

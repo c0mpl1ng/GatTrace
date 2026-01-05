@@ -71,12 +71,12 @@ func main() {
 
 	// 创建并运行应用程序
 	app := core.NewApplication(Version)
-	
+
 	// 注册所有采集器
 	if err := registerCollectors(app, config.Days); err != nil {
 		log.Fatalf("Failed to register collectors: %v", err)
 	}
-	
+
 	if err := app.Run(ctx, outputDir, config.Verbose); err != nil {
 		log.Printf("采集过程中发生错误: %v", err)
 		os.Exit(1)
@@ -88,14 +88,14 @@ func main() {
 // checkAdminPrivileges 检查管理员权限并给出提示
 func checkAdminPrivileges() {
 	isAdmin := false
-	
+
 	switch runtime.GOOS {
 	case "windows":
 		isAdmin = isWindowsAdmin()
 	case "linux", "darwin":
 		isAdmin = os.Geteuid() == 0
 	}
-	
+
 	if !isAdmin {
 		fmt.Println("⚠️  警告: 程序未以管理员权限运行")
 		fmt.Println("   部分功能可能受限:")
@@ -139,22 +139,22 @@ func registerCollectors(app *core.App, days int) error {
 
 	// 注册网络信息采集器
 	app.RegisterCollector(collectors.NewNetworkCollector(adapter))
-	
-	// 注册进程信息采集器  
+
+	// 注册进程信息采集器
 	app.RegisterCollector(collectors.NewProcessCollector(adapter))
-	
+
 	// 注册用户信息采集器
 	app.RegisterCollector(collectors.NewUserCollector(adapter))
-	
+
 	// 注册文件系统采集器（使用可配置的天数）
 	app.RegisterCollector(collectors.NewFileSystemCollectorWithDays(adapter, days))
-	
+
 	// 注册安全日志采集器（使用可配置的天数）
 	app.RegisterCollector(collectors.NewSecurityCollectorWithDays(adapter, days))
-	
+
 	// 注册系统信息采集器
 	app.RegisterCollector(collectors.NewSystemCollector(adapter))
-	
+
 	// 注册持久化机制采集器
 	app.RegisterCollector(collectors.NewPersistenceCollector(adapter))
 

@@ -115,7 +115,7 @@ func TestOutputSystemIntegration(t *testing.T) {
 	// 验证完整性管理器有所有文件的哈希
 	integrityManager := outputManager.GetIntegrityManager()
 	allHashes := integrityManager.GetAllHashes()
-	
+
 	for _, filename := range expectedFiles {
 		if _, exists := allHashes[filename]; !exists {
 			t.Errorf("Hash for file %s was not calculated", filename)

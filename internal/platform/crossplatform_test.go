@@ -96,7 +96,7 @@ func testInterfaceMethod(t *testing.T, platformName, methodName string, method f
 func TestProperty_PlatformAdapterFactory(t *testing.T) {
 	// 测试工厂函数在当前平台上返回正确的适配器
 	adapter, err := NewPlatformAdapter()
-	
+
 	switch runtime.GOOS {
 	case "windows", "linux", "darwin":
 		if err != nil {
@@ -105,20 +105,20 @@ func TestProperty_PlatformAdapterFactory(t *testing.T) {
 		if adapter == nil {
 			t.Fatal("NewPlatformAdapter() should not return nil on supported platform")
 		}
-		
+
 		// 验证返回的适配器类型正确
 		detector := adapter.GetPlatformDetector()
 		if detector == nil {
 			t.Fatal("Platform adapter should have a detector")
 		}
-		
+
 		detectedPlatform := detector.DetectPlatform()
 		expectedPlatform := getPlatformFromGOOS(runtime.GOOS)
-		
+
 		if detectedPlatform != expectedPlatform {
 			t.Errorf("Platform mismatch: detected=%v, expected=%v", detectedPlatform, expectedPlatform)
 		}
-		
+
 	default:
 		if err == nil {
 			t.Errorf("NewPlatformAdapter() should fail on unsupported platform %s", runtime.GOOS)
@@ -275,25 +275,25 @@ func TestProperty_ErrorHandlingConsistency(t *testing.T) {
 			// 测试权限错误处理
 			testErr := fmt.Errorf("test permission error")
 			handledErr := adapter.HandlePrivilegeError(testErr)
-			
+
 			if handledErr == nil {
 				t.Errorf("Platform %s: HandlePrivilegeError() should not return nil", platformName)
 				return
 			}
-			
+
 			// 验证错误结构的一致性
 			if handledErr.Module != "privilege" {
 				t.Errorf("Platform %s: expected module 'privilege', got '%s'", platformName, handledErr.Module)
 			}
-			
+
 			if handledErr.Operation == "" {
 				t.Errorf("Platform %s: error should have operation field", platformName)
 			}
-			
+
 			if handledErr.Err == nil {
 				t.Errorf("Platform %s: error should have underlying error", platformName)
 			}
-			
+
 			// 验证错误严重程度
 			validSeverities := []core.ErrorSeverity{
 				core.SeverityInfo,
@@ -301,7 +301,7 @@ func TestProperty_ErrorHandlingConsistency(t *testing.T) {
 				core.SeverityError,
 				core.SeverityCritical,
 			}
-			
+
 			severityValid := false
 			for _, validSeverity := range validSeverities {
 				if handledErr.Severity == validSeverity {
@@ -309,7 +309,7 @@ func TestProperty_ErrorHandlingConsistency(t *testing.T) {
 					break
 				}
 			}
-			
+
 			if !severityValid {
 				t.Errorf("Platform %s: invalid error severity: %v", platformName, handledErr.Severity)
 			}

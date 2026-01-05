@@ -130,7 +130,7 @@ func (d *RuntimePlatformDetector) CheckPrivileges() (bool, error) {
 // detectCapabilities 检测平台功能
 func (d *RuntimePlatformDetector) detectCapabilities(platform Platform) map[PlatformCapability]bool {
 	capabilities := make(map[PlatformCapability]bool)
-	
+
 	switch platform {
 	case PlatformWindows:
 		capabilities[CapabilityEventLogs] = true
@@ -148,7 +148,7 @@ func (d *RuntimePlatformDetector) detectCapabilities(platform Platform) map[Plat
 		capabilities[CapabilityLaunchAgents] = true
 		capabilities[CapabilityPrivilegeEscalation] = true
 	}
-	
+
 	return capabilities
 }
 
