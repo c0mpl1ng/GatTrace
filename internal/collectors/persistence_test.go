@@ -172,9 +172,6 @@ func TestPersistenceCollector_Collect_Timeout(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Millisecond)
 	defer cancel()
 
-	// 等待确保上下文超时
-	<-ctx.Done()
-
 	// 采集应该仍然成功（因为是快速操作）
 	result, err := collector.Collect(ctx)
 

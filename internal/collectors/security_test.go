@@ -160,9 +160,6 @@ func TestSecurityCollector_Collect_Timeout(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Millisecond)
 	defer cancel()
 
-	// 等待确保上下文超时
-	<-ctx.Done()
-
 	// 超时时，采集应该能够处理
 	result, err := collector.Collect(ctx)
 

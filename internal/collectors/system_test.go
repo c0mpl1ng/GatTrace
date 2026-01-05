@@ -188,12 +188,12 @@ func TestSystemCollector_Collect_Timeout(t *testing.T) {
 	// 让适配器失败，这样会使用通用方法
 	adapter.shouldFailSystemStatus = true
 
-	// 创建短超时上下文
-	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Millisecond)
+	// 创建已经超时的上下文
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Nanosecond)
 	defer cancel()
-
+	
 	// 等待确保上下文超时
-	<-ctx.Done()
+	time.Sleep(1 * time.Millisecond)
 
 	result, err := collector.Collect(ctx)
 
