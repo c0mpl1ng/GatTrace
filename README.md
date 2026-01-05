@@ -90,7 +90,7 @@ GatTrace/
 
 ### 下载安装
 
-1. 从 [Releases](https://github.com/your-org/GatTrace/releases) 页面下载对应平台的版本
+1. 从 [Releases](https://github.com/c0mpl1ng/GatTrace/releases) 页面下载对应平台的版本
 2. 解压到目标目录
 3. 运行程序
 
