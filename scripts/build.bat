@@ -22,7 +22,9 @@ if exist %BUILD_DIR% rmdir /s /q %BUILD_DIR%
 mkdir %BUILD_DIR%
 
 REM 构建标志
+REM -trimpath 移除编译路径信息，保护隐私
 set LDFLAGS=-s -w -X main.Version=%VERSION% -X main.BuildTime=%BUILD_TIME% -X main.GitCommit=%GIT_COMMIT%
+set BUILDFLAGS=-trimpath
 
 echo 🚀 开始跨平台构建...
 echo 版本: %VERSION%
@@ -34,7 +36,7 @@ REM 构建各平台版本
 echo 🔨 构建 windows/amd64...
 set GOOS=windows
 set GOARCH=amd64
-go build -ldflags="%LDFLAGS%" -o %BUILD_DIR%/%BINARY_NAME%-windows-amd64.exe ./cmd/GatTrace
+go build %BUILDFLAGS% -ldflags="%LDFLAGS%" -o %BUILD_DIR%/%BINARY_NAME%-windows-amd64.exe ./cmd/GatTrace
 if errorlevel 1 (
     echo ❌ 构建失败: windows/amd64
     exit /b 1
@@ -44,7 +46,7 @@ echo    ✅ 完成
 echo 🔨 构建 windows/arm64...
 set GOOS=windows
 set GOARCH=arm64
-go build -ldflags="%LDFLAGS%" -o %BUILD_DIR%/%BINARY_NAME%-windows-arm64.exe ./cmd/GatTrace
+go build %BUILDFLAGS% -ldflags="%LDFLAGS%" -o %BUILD_DIR%/%BINARY_NAME%-windows-arm64.exe ./cmd/GatTrace
 if errorlevel 1 (
     echo ❌ 构建失败: windows/arm64
     exit /b 1
@@ -54,7 +56,7 @@ echo    ✅ 完成
 echo 🔨 构建 linux/amd64...
 set GOOS=linux
 set GOARCH=amd64
-go build -ldflags="%LDFLAGS%" -o %BUILD_DIR%/%BINARY_NAME%-linux-amd64 ./cmd/GatTrace
+go build %BUILDFLAGS% -ldflags="%LDFLAGS%" -o %BUILD_DIR%/%BINARY_NAME%-linux-amd64 ./cmd/GatTrace
 if errorlevel 1 (
     echo ❌ 构建失败: linux/amd64
     exit /b 1
@@ -64,7 +66,7 @@ echo    ✅ 完成
 echo 🔨 构建 linux/arm64...
 set GOOS=linux
 set GOARCH=arm64
-go build -ldflags="%LDFLAGS%" -o %BUILD_DIR%/%BINARY_NAME%-linux-arm64 ./cmd/GatTrace
+go build %BUILDFLAGS% -ldflags="%LDFLAGS%" -o %BUILD_DIR%/%BINARY_NAME%-linux-arm64 ./cmd/GatTrace
 if errorlevel 1 (
     echo ❌ 构建失败: linux/arm64
     exit /b 1
@@ -74,7 +76,7 @@ echo    ✅ 完成
 echo 🔨 构建 darwin/amd64...
 set GOOS=darwin
 set GOARCH=amd64
-go build -ldflags="%LDFLAGS%" -o %BUILD_DIR%/%BINARY_NAME%-darwin-amd64 ./cmd/GatTrace
+go build %BUILDFLAGS% -ldflags="%LDFLAGS%" -o %BUILD_DIR%/%BINARY_NAME%-darwin-amd64 ./cmd/GatTrace
 if errorlevel 1 (
     echo ❌ 构建失败: darwin/amd64
     exit /b 1
@@ -84,7 +86,7 @@ echo    ✅ 完成
 echo 🔨 构建 darwin/arm64...
 set GOOS=darwin
 set GOARCH=arm64
-go build -ldflags="%LDFLAGS%" -o %BUILD_DIR%/%BINARY_NAME%-darwin-arm64 ./cmd/GatTrace
+go build %BUILDFLAGS% -ldflags="%LDFLAGS%" -o %BUILD_DIR%/%BINARY_NAME%-darwin-arm64 ./cmd/GatTrace
 if errorlevel 1 (
     echo ❌ 构建失败: darwin/arm64
     exit /b 1
