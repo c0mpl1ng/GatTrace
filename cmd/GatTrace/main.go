@@ -15,8 +15,6 @@ import (
 	"GatTrace/internal/platform"
 )
 
-const Version = "v1.1.0"
-
 // Config 应用程序配置
 type Config struct {
 	OutputDir   string
@@ -33,7 +31,7 @@ func main() {
 
 	// 处理版本和帮助信息
 	if config.ShowVersion {
-		fmt.Printf("GatTrace %s\n", Version)
+		fmt.Printf("GatTrace %s\n", core.Version)
 		fmt.Println("应急响应系统信息采集工具")
 		os.Exit(0)
 	}
@@ -63,14 +61,14 @@ func main() {
 		log.Fatalf("Failed to create output directory: %v", err)
 	}
 
-	fmt.Printf("GatTrace %s - 应急响应系统信息采集工具\n", Version)
+	fmt.Printf("GatTrace %s - 应急响应系统信息采集工具\n", core.Version)
 	fmt.Printf("输出目录: %s\n", outputDir)
 	fmt.Printf("超时设置: %v\n", config.Timeout)
 	fmt.Printf("采集时间范围: %d 天\n", config.Days)
 	fmt.Println("开始采集系统信息...")
 
 	// 创建并运行应用程序
-	app := core.NewApplication(Version)
+	app := core.NewApplication(core.Version)
 
 	// 注册所有采集器
 	if err := registerCollectors(app, config.Days); err != nil {
@@ -223,7 +221,7 @@ func createOutputDirectory(customDir string) (string, error) {
 
 // printUsage 打印使用说明
 func printUsage() {
-	fmt.Printf("GatTrace %s - 应急响应系统信息采集工具\n\n", Version)
+	fmt.Printf("GatTrace %s - 应急响应系统信息采集工具\n\n", core.Version)
 	fmt.Println("用法:")
 	fmt.Printf("  %s [选项]\n\n", os.Args[0])
 	fmt.Println("选项:")
