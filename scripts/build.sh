@@ -1,8 +1,26 @@
 #!/bin/bash
 
 # GatTrace 跨平台构建脚本
+# 
+# 重要说明：
+# 为了兼容 Windows 7，必须使用 Go 1.20 或更早版本构建
+# Go 1.21+ 的运行时依赖 bcryptprimitives.dll (仅 Windows 10+ 可用)
+#
+# 使用方法：
+# 1. 使用 gvm: source ~/.gvm/scripts/gvm && gvm use go1.20 && ./scripts/build.sh
+# 2. 或确保系统 Go 版本为 1.20 或更早
 
 set -e
+
+# 检查 Go 版本
+GO_VERSION=$(go version | grep -oE 'go1\.[0-9]+' | head -1)
+echo "🔍 检测到 Go 版本: $GO_VERSION"
+
+if [[ "$GO_VERSION" > "go1.20" ]]; then
+    echo "⚠️  警告: Go $GO_VERSION 构建的 Windows 版本不兼容 Windows 7"
+    echo "   建议使用 Go 1.20: gvm use go1.20"
+    echo ""
+fi
 
 # 项目信息
 PROJECT_NAME="GatTrace"

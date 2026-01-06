@@ -118,6 +118,12 @@ GatTrace --verbose --output ./output
 GatTrace --days 7 --output ./output
 ```
 
+### Windows 7 兼容性
+
+所有Windows版本均使用Go 1.20构建，完全兼容Windows 7 SP1及更高版本。
+
+**注意：** 构建时必须使用Go 1.20或更早版本，Go 1.21+构建的版本不兼容Windows 7。
+
 ## 📋 采集内容
 
 ### 🌐 网络信息
