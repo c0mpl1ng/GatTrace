@@ -411,11 +411,11 @@ type ErrorSummary struct {
 
 // PrintSummary 打印错误摘要
 func (er *ErrorReport) PrintSummary() {
-	fmt.Println("=== 错误报告摘要 ===")
-	fmt.Printf("总错误数: %d\n", len(er.Errors))
+	Println("=== 错误报告摘要 ===")
+	Printf("总错误数: %d\n", len(er.Errors))
 
 	if len(er.Errors) == 0 {
-		fmt.Println("✅ 没有错误记录")
+		ConsoleSuccess("没有错误记录")
 		return
 	}
 
@@ -439,37 +439,51 @@ func (er *ErrorReport) PrintSummary() {
 		// Note: ErrorInfo doesn't have Category field, so we skip category counting
 	}
 
-	fmt.Printf("严重错误: %d\n", criticalCount)
-	fmt.Printf("错误: %d\n", errorCount)
-	fmt.Printf("警告: %d\n", warningCount)
-	fmt.Printf("信息: %d\n", infoCount)
-	fmt.Println()
+	Printf("严重错误: %d\n", criticalCount)
+	Printf("错误: %d\n", errorCount)
+	Printf("警告: %d\n", warningCount)
+	Printf("信息: %d\n", infoCount)
+	Println("")
 
 	// 显示最近的几个错误
-	fmt.Println("最近的错误:")
+	Println("最近的错误:")
 	maxShow := 5
 	if len(er.Errors) < maxShow {
 		maxShow = len(er.Errors)
 	}
 
+	config := GetConsoleConfig()
 	for i := 0; i < maxShow; i++ {
 		err := er.Errors[i]
-		severityIcon := "ℹ️"
-		switch err.Severity {
-		case SeverityCritical.String():
-			severityIcon = "🔴"
-		case SeverityError.String():
-			severityIcon = "❌"
-		case SeverityWarning.String():
-			severityIcon = "⚠️"
+		var severityIcon string
+		if config.UseEmoji {
+			severityIcon = "ℹ️"
+			switch err.Severity {
+			case SeverityCritical.String():
+				severityIcon = "🔴"
+			case SeverityError.String():
+				severityIcon = "❌"
+			case SeverityWarning.String():
+				severityIcon = "⚠️"
+			}
+		} else {
+			severityIcon = "[i]"
+			switch err.Severity {
+			case SeverityCritical.String():
+				severityIcon = "[!!]"
+			case SeverityError.String():
+				severityIcon = "[X]"
+			case SeverityWarning.String():
+				severityIcon = "[!]"
+			}
 		}
 
-		fmt.Printf("  %s [%s] %s: %s\n",
+		Printf("  %s [%s] %s: %s\n",
 			severityIcon, err.Timestamp.Format("15:04:05"), err.Module, err.Error)
 	}
 
 	if len(er.Errors) > maxShow {
-		fmt.Printf("  ... 还有 %d 个错误\n", len(er.Errors)-maxShow)
+		Printf("  ... 还有 %d 个错误\n", len(er.Errors)-maxShow)
 	}
 }
 

@@ -209,34 +209,55 @@ type CollectorVerificationResult struct {
 
 // PrintReport 打印验证报告
 func (report *VerificationReport) PrintReport() {
-	fmt.Println("=== GatTrace 采集器检查点验证报告 ===")
-	fmt.Printf("总采集器数量: %d\n", report.TotalCollectors)
-	fmt.Printf("通过测试: %d\n", report.PassedTests)
-	fmt.Printf("失败测试: %d\n", report.FailedTests)
-	fmt.Printf("成功率: %.1f%%\n", float64(report.PassedTests)/float64(report.TotalCollectors)*100)
-	fmt.Println()
+	core.Println("=== GatTrace 采集器检查点验证报告 ===")
+	core.Printf("总采集器数量: %d\n", report.TotalCollectors)
+	core.Printf("通过测试: %d\n", report.PassedTests)
+	core.Printf("失败测试: %d\n", report.FailedTests)
+	core.Printf("成功率: %.1f%%\n", float64(report.PassedTests)/float64(report.TotalCollectors)*100)
+	core.Println("")
 
+	config := core.GetConsoleConfig()
 	for name, result := range report.Results {
 		if result.Passed {
-			fmt.Printf("✅ %s - 通过\n", name)
+			if config.UseEmoji {
+				core.Printf("✅ %s - 通过\n", name)
+			} else {
+				core.Printf("[OK] %s - 通过\n", name)
+			}
 		} else {
-			fmt.Printf("❌ %s - 失败\n", name)
+			if config.UseEmoji {
+				core.Printf("❌ %s - 失败\n", name)
+			} else {
+				core.Printf("[X] %s - 失败\n", name)
+			}
 		}
 
 		for _, msg := range result.Messages {
-			fmt.Printf("   %s\n", msg)
+			core.Printf("   %s\n", core.ConsoleText(msg))
 		}
 
 		for _, err := range result.Errors {
-			fmt.Printf("   ❌ %s\n", err)
+			if config.UseEmoji {
+				core.Printf("   ❌ %s\n", err)
+			} else {
+				core.Printf("   [X] %s\n", err)
+			}
 		}
-		fmt.Println()
+		core.Println("")
 	}
 
 	if report.FailedTests == 0 {
-		fmt.Println("🎉 所有采集器验证通过！系统准备就绪。")
+		if config.UseEmoji {
+			core.Println("🎉 所有采集器验证通过！系统准备就绪。")
+		} else {
+			core.Println("[!] 所有采集器验证通过！系统准备就绪。")
+		}
 	} else {
-		fmt.Printf("⚠️  有 %d 个采集器验证失败，需要修复。\n", report.FailedTests)
+		if config.UseEmoji {
+			core.Printf("⚠️  有 %d 个采集器验证失败，需要修复。\n", report.FailedTests)
+		} else {
+			core.Printf("[!] 有 %d 个采集器验证失败，需要修复。\n", report.FailedTests)
+		}
 	}
 }
 

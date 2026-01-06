@@ -36,7 +36,7 @@ func (a *App) Run(ctx context.Context, outputDir string, verbose bool) error {
 
 	// 捕获开始快照
 	if verbose {
-		fmt.Println("正在捕获系统开始状态快照...")
+		Println("正在捕获系统开始状态快照...")
 	}
 	if err := a.systemMonitor.CaptureStartSnapshot(ctx); err != nil {
 		return fmt.Errorf("failed to capture start snapshot: %w", err)
@@ -70,13 +70,13 @@ func (a *App) Run(ctx context.Context, outputDir string, verbose bool) error {
 		return fmt.Errorf("failed to register collectors: %w", err)
 	}
 
-	fmt.Printf("会话ID: %s\n", sessionManager.GetSessionID())
-	fmt.Printf("主机名: %s\n", sessionManager.GetHostname())
-	fmt.Printf("平台: %s\n", sessionManager.GetPlatform())
-	fmt.Printf("权限级别: %s\n", privilegeInfo.Level)
+	Printf("会话ID: %s\n", sessionManager.GetSessionID())
+	Printf("主机名: %s\n", sessionManager.GetHostname())
+	Printf("平台: %s\n", sessionManager.GetPlatform())
+	Printf("权限级别: %s\n", privilegeInfo.Level)
 
 	if verbose {
-		fmt.Printf("注册了 %d 个采集器\n", len(a.collectors))
+		Printf("注册了 %d 个采集器\n", len(a.collectors))
 	}
 
 	// 执行采集流程
@@ -104,7 +104,7 @@ func (a *App) Run(ctx context.Context, outputDir string, verbose bool) error {
 
 	// 捕获结束快照并比较
 	if verbose {
-		fmt.Println("正在捕获系统结束状态快照...")
+		Println("正在捕获系统结束状态快照...")
 	}
 	if err := a.systemMonitor.CaptureEndSnapshot(ctx); err != nil {
 		a.errorManager.RecordError(&CollectionError{
@@ -222,7 +222,7 @@ func (a *App) runCollectionProcess(ctx context.Context, outputDir string, verbos
 		return fmt.Errorf("no collectors can run with current privileges")
 	}
 
-	fmt.Printf("开始并发采集，共 %d 个采集器...\n", len(runnableCollectors))
+	Printf("开始并发采集，共 %d 个采集器...\n", len(runnableCollectors))
 
 	// 创建采集结果通道
 	resultChan := make(chan *CollectorResult, len(runnableCollectors))
@@ -313,9 +313,14 @@ func (a *App) runCollectionProcess(ctx context.Context, outputDir string, verbos
 			}
 		}
 
-		// 显示进度
-		fmt.Printf("进度: %d/%d 完成 (成功: %d, 失败: %d)\n",
-			result.Index, result.Total, successCount, failureCount)
+		// 显示进度（包含采集器名称）
+		displayName := getCollectorDisplayName(result.CollectorName)
+		status := "完成"
+		if result.Error != nil {
+			status = "失败"
+		}
+		Printf("进度: %d/%d  %s采集%s (成功: %d, 失败: %d)\n",
+			result.Index, result.Total, displayName, status, successCount, failureCount)
 	}
 
 	// 检查上下文是否被取消
@@ -323,8 +328,27 @@ func (a *App) runCollectionProcess(ctx context.Context, outputDir string, verbos
 		return fmt.Errorf("collection process cancelled: %w", ctx.Err())
 	}
 
-	fmt.Printf("采集过程完成: 成功 %d, 失败 %d\n", successCount, failureCount)
+	Printf("采集过程完成: 成功 %d, 失败 %d\n", successCount, failureCount)
 	return nil
+}
+
+// collectorDisplayNames 采集器名称到中文显示名称的映射
+var collectorDisplayNames = map[string]string{
+	"network":     "网络信息",
+	"process":     "进程信息",
+	"user":        "用户信息",
+	"filesystem":  "文件系统",
+	"security":    "安全日志",
+	"system":      "系统信息",
+	"persistence": "持久化机制",
+}
+
+// getCollectorDisplayName 获取采集器的中文显示名称
+func getCollectorDisplayName(name string) string {
+	if displayName, ok := collectorDisplayNames[name]; ok {
+		return displayName
+	}
+	return name
 }
 
 // CollectorResult 采集器结果
@@ -549,7 +573,7 @@ func (h *htmlGeneratorImpl) generateFullHTML(data map[string]interface{}) string
         </main>
         
         <footer class="footer">
-            <p>GatTrace 系统信息采集工具 v1.0.0</p>
+            <p>GatTrace 系统信息采集工具 %s</p>
         </footer>
     </div>
     
@@ -870,7 +894,7 @@ let report;
 document.addEventListener('DOMContentLoaded', () => { report = new GatTraceReport(); });
     </script>
 </body>
-</html>`, h.getCSS(), jsonStr)
+</html>`, h.getCSS(), jsonStr, Version)
 }
 
 // getCSS 返回内联CSS样式
@@ -1030,28 +1054,28 @@ func (a *App) generateSystemStateReport(outputDir string, verbose bool) error {
 		})
 
 		if verbose {
-			fmt.Printf("警告: 检测到系统状态变更:\n")
+			Printf("警告: 检测到系统状态变更:\n")
 			if len(comparison.ProcessChanges.Added) > 0 {
-				fmt.Printf("  - 新增进程: %d 个\n", len(comparison.ProcessChanges.Added))
+				Printf("  - 新增进程: %d 个\n", len(comparison.ProcessChanges.Added))
 			}
 			if len(comparison.ProcessChanges.Removed) > 0 {
-				fmt.Printf("  - 删除进程: %d 个\n", len(comparison.ProcessChanges.Removed))
+				Printf("  - 删除进程: %d 个\n", len(comparison.ProcessChanges.Removed))
 			}
 			if len(comparison.NetworkChanges.Added) > 0 {
-				fmt.Printf("  - 新增网络端口: %d 个\n", len(comparison.NetworkChanges.Added))
+				Printf("  - 新增网络端口: %d 个\n", len(comparison.NetworkChanges.Added))
 			}
 			if len(comparison.NetworkChanges.Removed) > 0 {
-				fmt.Printf("  - 删除网络端口: %d 个\n", len(comparison.NetworkChanges.Removed))
+				Printf("  - 删除网络端口: %d 个\n", len(comparison.NetworkChanges.Removed))
 			}
 			if len(comparison.FileChanges.Modified) > 0 {
-				fmt.Printf("  - 修改文件: %d 个\n", len(comparison.FileChanges.Modified))
+				Printf("  - 修改文件: %d 个\n", len(comparison.FileChanges.Modified))
 			}
 			if comparison.WorkingDirChanged {
-				fmt.Printf("  - 工作目录已变更\n")
+				Printf("  - 工作目录已变更\n")
 			}
 		}
 	} else if verbose {
-		fmt.Println("✓ 系统状态检查: 未检测到变更")
+		ConsoleInfo("系统状态检查: 未检测到变更")
 	}
 
 	return nil

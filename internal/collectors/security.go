@@ -433,9 +433,8 @@ func (c *SecurityCollector) queryWindowsEventLogPowerShell(ctx context.Context, 
 
 	// 使用PowerShell获取事件 - 直接在 FilterHashtable 中指定事件ID，效率更高
 	// 注意：Security 日志需要管理员权限
+	// 注意：不设置 UTF-8 编码，让 PowerShell 使用系统默认编码，避免 Windows 7 兼容性问题
 	psScript := fmt.Sprintf(`
-[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
-$OutputEncoding = [System.Text.Encoding]::UTF8
 $ids = @(%s)
 try {
     $events = Get-WinEvent -FilterHashtable @{LogName='%s'; Id=$ids; StartTime=(Get-Date).AddDays(-%d)} -ErrorAction Stop

@@ -202,44 +202,53 @@ type PrivilegeSummary struct {
 
 // PrintReport 打印权限报告
 func (pr *PrivilegeReport) PrintReport() {
-	fmt.Println("=== GatTrace 权限检查报告 ===")
-	fmt.Printf("生成时间: %s\n", pr.GeneratedAt.Format("2006-01-02 15:04:05 UTC"))
-	fmt.Println()
+	Println("=== GatTrace 权限检查报告 ===")
+	Printf("生成时间: %s\n", pr.GeneratedAt.Format("2006-01-02 15:04:05 UTC"))
+	Println("")
 
 	// 系统权限信息
-	fmt.Println("系统权限信息:")
-	fmt.Printf("  用户: %s (%s)\n", pr.SystemPrivileges.Username, pr.SystemPrivileges.UserID)
-	fmt.Printf("  权限级别: %s\n", pr.SystemPrivileges.Level)
-	fmt.Printf("  管理员权限: %v\n", pr.SystemPrivileges.IsAdmin)
-	fmt.Printf("  可提升权限: %v\n", pr.SystemPrivileges.CanElevate)
-	fmt.Printf("  平台: %s\n", pr.SystemPrivileges.Platform)
-	fmt.Println()
+	Println("系统权限信息:")
+	Printf("  用户: %s (%s)\n", pr.SystemPrivileges.Username, pr.SystemPrivileges.UserID)
+	Printf("  权限级别: %s\n", pr.SystemPrivileges.Level)
+	Printf("  管理员权限: %v\n", pr.SystemPrivileges.IsAdmin)
+	Printf("  可提升权限: %v\n", pr.SystemPrivileges.CanElevate)
+	Printf("  平台: %s\n", pr.SystemPrivileges.Platform)
+	Println("")
 
 	// 采集器检查摘要
-	fmt.Println("采集器权限检查摘要:")
-	fmt.Printf("  总采集器数: %d\n", pr.Summary.TotalCollectors)
-	fmt.Printf("  可运行: %d\n", pr.Summary.CanRunCollectors)
-	fmt.Printf("  无法运行: %d\n", pr.Summary.CannotRunCollectors)
-	fmt.Printf("  需要提升权限: %d\n", pr.Summary.RequiresElevation)
-	fmt.Println()
+	Println("采集器权限检查摘要:")
+	Printf("  总采集器数: %d\n", pr.Summary.TotalCollectors)
+	Printf("  可运行: %d\n", pr.Summary.CanRunCollectors)
+	Printf("  无法运行: %d\n", pr.Summary.CannotRunCollectors)
+	Printf("  需要提升权限: %d\n", pr.Summary.RequiresElevation)
+	Println("")
 
 	// 详细检查结果
-	fmt.Println("详细检查结果:")
+	Println("详细检查结果:")
+	config := GetConsoleConfig()
 	for _, check := range pr.CollectorChecks {
-		status := "✅"
-		if !check.CanRun {
-			status = "❌"
+		var status string
+		if config.UseEmoji {
+			status = "✅"
+			if !check.CanRun {
+				status = "❌"
+			}
+		} else {
+			status = "[OK]"
+			if !check.CanRun {
+				status = "[X]"
+			}
 		}
 
-		fmt.Printf("  %s %s\n", status, check.CollectorName)
-		fmt.Printf("    需要权限: %s\n", check.RequiredLevel)
-		fmt.Printf("    当前权限: %s\n", check.CurrentLevel)
-		fmt.Printf("    状态: %s\n", check.Reason)
+		Printf("  %s %s\n", status, check.CollectorName)
+		Printf("    需要权限: %s\n", check.RequiredLevel)
+		Printf("    当前权限: %s\n", check.CurrentLevel)
+		Printf("    状态: %s\n", check.Reason)
 
 		if !check.CanRun {
-			fmt.Printf("    建议: %s\n", check.Recommendation)
+			Printf("    建议: %s\n", check.Recommendation)
 		}
-		fmt.Println()
+		Println("")
 	}
 }
 

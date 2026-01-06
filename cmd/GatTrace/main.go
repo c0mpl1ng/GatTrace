@@ -26,13 +26,16 @@ type Config struct {
 }
 
 func main() {
+	// 初始化 Windows 控制台（设置正确的代码页）
+	core.InitWindowsConsole()
+
 	// 解析命令行参数
 	config := parseFlags()
 
 	// 处理版本和帮助信息
 	if config.ShowVersion {
-		fmt.Printf("GatTrace %s\n", core.Version)
-		fmt.Println("应急响应系统信息采集工具")
+		core.Printf("GatTrace %s\n", core.Version)
+		core.Println("应急响应系统信息采集工具")
 		os.Exit(0)
 	}
 
@@ -61,11 +64,11 @@ func main() {
 		log.Fatalf("Failed to create output directory: %v", err)
 	}
 
-	fmt.Printf("GatTrace %s - 应急响应系统信息采集工具\n", core.Version)
-	fmt.Printf("输出目录: %s\n", outputDir)
-	fmt.Printf("超时设置: %v\n", config.Timeout)
-	fmt.Printf("采集时间范围: %d 天\n", config.Days)
-	fmt.Println("开始采集系统信息...")
+	core.Printf("GatTrace %s - 应急响应系统信息采集工具\n", core.Version)
+	core.Printf("输出目录: %s\n", outputDir)
+	core.Printf("超时设置: %v\n", config.Timeout)
+	core.Printf("采集时间范围: %d 天\n", config.Days)
+	core.Println("开始采集系统信息...")
 
 	// 创建并运行应用程序
 	app := core.NewApplication(core.Version)
@@ -80,7 +83,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	fmt.Printf("✅ GatTrace 采集完成，结果保存在: %s\n", outputDir)
+	core.ConsoleSuccess("GatTrace 采集完成，结果保存在: %s", outputDir)
 }
 
 // checkAdminPrivileges 检查管理员权限并给出提示
@@ -95,23 +98,23 @@ func checkAdminPrivileges() {
 	}
 
 	if !isAdmin {
-		fmt.Println("⚠️  警告: 程序未以管理员权限运行")
-		fmt.Println("   部分功能可能受限:")
+		core.ConsoleWarning("警告: 程序未以管理员权限运行")
+		core.Println("   部分功能可能受限:")
 		switch runtime.GOOS {
 		case "windows":
-			fmt.Println("   - Security 日志（登录/注销事件）无法访问")
-			fmt.Println("   - 某些系统进程信息可能不完整")
-			fmt.Println("   - 部分文件系统信息可能无法获取")
-			fmt.Println()
-			fmt.Println("   建议: 右键点击程序，选择\"以管理员身份运行\"")
+			core.Println("   - Security 日志（登录/注销事件）无法访问")
+			core.Println("   - 某些系统进程信息可能不完整")
+			core.Println("   - 部分文件系统信息可能无法获取")
+			core.Println("")
+			core.Println("   建议: 右键点击程序，选择\"以管理员身份运行\"")
 		case "linux", "darwin":
-			fmt.Println("   - 安全日志可能无法完整访问")
-			fmt.Println("   - 某些系统进程信息可能不完整")
-			fmt.Println("   - 部分文件系统信息可能无法获取")
-			fmt.Println()
-			fmt.Println("   建议: 使用 sudo 运行程序")
+			core.Println("   - 安全日志可能无法完整访问")
+			core.Println("   - 某些系统进程信息可能不完整")
+			core.Println("   - 部分文件系统信息可能无法获取")
+			core.Println("")
+			core.Println("   建议: 使用 sudo 运行程序")
 		}
-		fmt.Println()
+		core.Println("")
 	}
 }
 
@@ -221,32 +224,32 @@ func createOutputDirectory(customDir string) (string, error) {
 
 // printUsage 打印使用说明
 func printUsage() {
-	fmt.Printf("GatTrace %s - 应急响应系统信息采集工具\n\n", core.Version)
-	fmt.Println("用法:")
-	fmt.Printf("  %s [选项]\n\n", os.Args[0])
-	fmt.Println("选项:")
-	fmt.Println("  -o, --output <目录>     指定输出目录 (默认: ir_output/hostname-timestamp)")
-	fmt.Println("  -v, --verbose           详细输出模式")
-	fmt.Println("  -t, --timeout <时间>    采集超时时间 (默认: 5m)")
-	fmt.Println("  -d, --days <天数>       日志和文件系统采集的时间范围 (默认: 7天, 范围: 1-365)")
-	fmt.Println("  --version               显示版本信息")
-	fmt.Println("  -h, --help              显示此帮助信息")
-	fmt.Println()
-	fmt.Println("示例:")
-	fmt.Printf("  %s                      # 使用默认设置采集\n", os.Args[0])
-	fmt.Printf("  %s -o /tmp/ir-data      # 指定输出目录\n", os.Args[0])
-	fmt.Printf("  %s -v -t 10m            # 详细模式，10分钟超时\n", os.Args[0])
-	fmt.Printf("  %s -d 30                # 采集最近30天的日志和文件\n", os.Args[0])
-	fmt.Println()
-	fmt.Println("输出:")
-	fmt.Println("  工具会在指定目录中创建以下文件:")
-	fmt.Println("  - *.json                各类系统信息的JSON文件")
-	fmt.Println("  - index.html            可视化报告页面")
-	fmt.Println("  - assets/               报告所需的CSS和JS资源")
-	fmt.Println("  - manifest.json         文件清单和完整性哈希")
-	fmt.Println()
-	fmt.Println("注意:")
-	fmt.Println("  - 工具以只读模式运行，不会修改系统状态")
-	fmt.Println("  - 某些功能可能需要管理员权限才能完整采集")
-	fmt.Println("  - 生成的报告可以离线查看，无需网络连接")
+	core.Printf("GatTrace %s - 应急响应系统信息采集工具\n\n", core.Version)
+	core.Println("用法:")
+	core.Printf("  %s [选项]\n\n", os.Args[0])
+	core.Println("选项:")
+	core.Println("  -o, --output <目录>     指定输出目录 (默认: ir_output/hostname-timestamp)")
+	core.Println("  -v, --verbose           详细输出模式")
+	core.Println("  -t, --timeout <时间>    采集超时时间 (默认: 5m)")
+	core.Println("  -d, --days <天数>       日志和文件系统采集的时间范围 (默认: 7天, 范围: 1-365)")
+	core.Println("  --version               显示版本信息")
+	core.Println("  -h, --help              显示此帮助信息")
+	core.Println("")
+	core.Println("示例:")
+	core.Printf("  %s                      # 使用默认设置采集\n", os.Args[0])
+	core.Printf("  %s -o /tmp/ir-data      # 指定输出目录\n", os.Args[0])
+	core.Printf("  %s -v -t 10m            # 详细模式，10分钟超时\n", os.Args[0])
+	core.Printf("  %s -d 30                # 采集最近30天的日志和文件\n", os.Args[0])
+	core.Println("")
+	core.Println("输出:")
+	core.Println("  工具会在指定目录中创建以下文件:")
+	core.Println("  - *.json                各类系统信息的JSON文件")
+	core.Println("  - index.html            可视化报告页面")
+	core.Println("  - assets/               报告所需的CSS和JS资源")
+	core.Println("  - manifest.json         文件清单和完整性哈希")
+	core.Println("")
+	core.Println("注意:")
+	core.Println("  - 工具以只读模式运行，不会修改系统状态")
+	core.Println("  - 某些功能可能需要管理员权限才能完整采集")
+	core.Println("  - 生成的报告可以离线查看，无需网络连接")
 }

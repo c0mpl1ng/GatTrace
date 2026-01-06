@@ -122,7 +122,10 @@ GatTrace --days 7 --output ./output
 
 所有Windows版本均使用Go 1.20构建，完全兼容Windows 7 SP1及更高版本。
 
-**注意：** 构建时必须使用Go 1.20或更早版本，Go 1.21+构建的版本不兼容Windows 7。
+**注意：** 
+- 构建时必须使用Go 1.20或更早版本，Go 1.21+构建的版本不兼容Windows 7
+- 程序会自动检测Windows版本，在Windows 7上禁用emoji字符以避免控制台显示问题
+- 如果在其他旧版Windows上遇到控制台显示异常（字符重复、字体变化），可设置环境变量 `GATTRACE_LEGACY_CONSOLE=1` 强制使用兼容模式
 
 ## 📋 采集内容
 
