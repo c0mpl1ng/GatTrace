@@ -894,7 +894,7 @@ let report;
 document.addEventListener('DOMContentLoaded', () => { report = new GatTraceReport(); });
     </script>
 </body>
-</html>`, h.getCSS(), jsonStr, Version)
+</html>`, h.getCSS(), Version, jsonStr)
 }
 
 // getCSS 返回内联CSS样式
